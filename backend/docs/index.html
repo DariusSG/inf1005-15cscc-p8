@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Swagger UI</title>
+  <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@4.33.0/swagger-ui.css" />
+  <link rel="icon" type="image/png" href="favicon-32x32.png" sizes="32x32" />
+  <link rel="icon" type="image/png" href="favicon-16x16.png" sizes="16x16" />
+  <style>
+    html { box-sizing: border-box; overflow-y: scroll; }
+    *, *:before, *:after { box-sizing: inherit; }
+    body { margin: 0; background: #fafafa; }
+  </style>
+</head>
+<body>
+  <div id="swagger-ui"></div>
+
+  <script src="https://unpkg.com/swagger-ui-dist@4.33.0/swagger-ui-bundle.js"></script>
+  <script src="https://unpkg.com/swagger-ui-dist@4.33.0/swagger-ui-standalone-preset.js"></script>
+
+  <script>
+    window.onload = function() {
+      const ui = SwaggerUIBundle({
+        url: window.location.protocol + "//" + window.location.hostname + "/docs/swagger.php",
+        dom_id: '#swagger-ui',
+        deepLinking: true,
+        presets: [
+          SwaggerUIBundle.presets.apis,
+          SwaggerUIStandalonePreset
+        ],
+        layout: "StandaloneLayout",
+        validatorUrl: null,
+        requestInterceptor: (req) => {
+          // Add Bearer token automatically if set in localStorage
+          const token = localStorage.getItem('jwt_token');
+          if (token) {
+            req.headers['Authorization'] = 'Bearer ' + token;
+          }
+          return req;
+        }
+      });
+
+      // Save UI instance globally for debug
+      window.ui = ui;
+
+      // Add simple auth token input
+      const authContainer = document.createElement('div');
+      authContainer.style.padding = '10px';
+      authContainer.innerHTML = `
+        <label>JWT Token: <input id="jwt-input" style="width:300px"/></label>
+        <button id="jwt-set">Set Token</button>
+        <button id="jwt-clear">Clear Token</button>
+      `;
+      document.body.insertBefore(authContainer, document.getElementById('swagger-ui'));
+
+      document.getElementById('jwt-set').onclick = () => {
+        const token = document.getElementById('jwt-input').value;
+        localStorage.setItem('jwt_token', token);
+        alert('Token saved! It will be sent in Authorization header.');
+      };
+
+      document.getElementById('jwt-clear').onclick = () => {
+        localStorage.removeItem('jwt_token');
+        alert('Token cleared.');
+      };
+    }
+  </script>
+</body>
+</html>
