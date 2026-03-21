@@ -45,22 +45,58 @@ CorsMiddleware::handle();
 
 $router = new Router();
 
-$router->prefix('/api/v1', function($router) {
+$router->middleware(['CorsMiddleware', 'RateLimitMiddleware'], function ($router) {
 
-    $router->prefix('/auth', function($router) {
+    $router->prefix('/api/v1', function ($router) {
 
-        $router->post('/register', 'AuthController@register');
-        $router->post('/login', 'AuthController@login');
-        $router->post('/refresh', 'AuthController@refresh');
-        $router->get('/me', 'AuthController@me', ['JwtMiddleware']);
+        // ── Auth (public) ────────────────────────────────────────────────
+        $router->post('/auth/login',    'AuthController@login');
+        $router->post('/auth/refresh',  'AuthController@refresh');
+        $router->post('/auth/register/request',  'AuthController@requestRegistration');
+        $router->get('/auth/register/verify',    'AuthController@checkVerifyToken');
+        $router->post('/auth/register/complete', 'AuthController@completeRegistration');
 
+        // ── Authenticated ────────────────────────────────────────────────
+        $router->middleware(['JwtMiddleware'], function ($router) {
+
+            $router->get('/auth/me',  'AuthController@me');
+            $router->post('/auth/logout', 'AuthController@logout');
+
+            // Users (admin only)
+            $router->middleware(['JwtMiddleware:admin'], function ($router) {
+                $router->get('/users',      'UserController@index');
+                $router->get('/users/{id}', 'UserController@show');
+            });
+
+            // Modules
+            $router->get('/modules',       'ModuleController@index');
+            $router->get('/modules/{code}', 'ModuleController@show');
+
+            // Reviews
+            $router->post('/reviews',               'ReviewController@store');
+            $router->post('/reviews/{id}',          'ReviewController@update');  // PUT-as-POST fallback
+            $router->post('/reviews/{id}/vote',     'ReviewController@vote');
+            $router->post('/reviews/{id}/report',   'ReviewController@report');
+            $router->post('/reviews/{id}/comments', 'ReviewController@addComment');
+
+            // Tutors
+            $router->get('/tutors',  'TutorController@index');
+            $router->post('/tutors', 'TutorController@store');
+
+            // Study groups
+            $router->get('/study-groups',  'StudyGroupController@index');
+            $router->post('/study-groups', 'StudyGroupController@store');
+
+            // Help requests
+            $router->get('/help-requests',  'HelpRequestController@index');
+            $router->post('/help-requests', 'HelpRequestController@store');
+
+            // Admin
+            $router->middleware(['JwtMiddleware:admin'], function ($router) {
+                $router->get('/admin/reported-reviews', 'AdminController@reportedReviews');
+            });
+        });
     });
-
-    $router->prefix('/users', function($router) {
-        $router->get('/', 'UserController@index', ['JwtMiddleware','RateLimitMiddleware']);
-        $router->get('/{id}', 'UserController@show', ['JwtMiddleware']);
-    });
-
 });
 
 $router->resolve();

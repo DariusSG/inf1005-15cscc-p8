@@ -6,27 +6,30 @@ use App\Models\User;
 
 class UserRepository
 {
-    public static function findByEmail($email)
+    public static function findByEmail(string $email): ?User
     {
-        return User::select('id', 'email', 'password', 'role')->where('email', $email)->first();
+        return User::select('id', 'email', 'name', 'password', 'role')
+            ->where('email', $email)
+            ->first();
     }
 
-    public static function findById($id)
+    public static function findById(int $id): ?User
     {
-        return User::select('id', 'email', 'role')->find($id);
+        return User::select('id', 'email', 'name', 'role')->find($id);
     }
 
-    public static function create($email, $password, $role = 'user')
+    public static function create(string $email, string $password, string $role = 'student', string $name = ''): User
     {
         return User::create([
-            "email" => $email,
-            "password" => $password,
-            "role" => $role
+            'email'    => strtolower(trim($email)),
+            'name'     => $name,
+            'password' => $password,
+            'role'     => $role,
         ]);
     }
 
-    public static function all()
+    public static function all(): array
     {
-        return User::select('id', 'email', 'role')->get();
+        return User::select('id', 'email', 'name', 'role')->get()->toArray();
     }
 }

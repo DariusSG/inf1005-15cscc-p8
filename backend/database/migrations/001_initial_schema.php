@@ -10,6 +10,7 @@ class InitialSchema
         Capsule::schema()->create('users', function ($table) {
             $table->increments('id');
             $table->string('email')->unique();
+            $table->string('name');
             $table->string('password');
             $table->string('role')->default('user');
             $table->timestamps();

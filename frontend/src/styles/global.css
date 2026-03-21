@@ -366,7 +366,9 @@
   /* ============================================================
      AUTH MODAL
      ============================================================ */
-  .auth-modal .modal{max-width:400px;}
+  .auth-modal .modal{max-width:420px;}
+
+  /* Tabs — Login / Register */
   .auth-tabs{display:flex;border-bottom:1px solid var(--border);}
   .auth-tab{
     flex:1;padding:12px;text-align:center;font-weight:500;
@@ -375,21 +377,36 @@
   }
   .auth-tab.active{color:var(--accent);border-bottom-color:var(--accent);}
   .auth-tab:hover{color:var(--text-primary);}
+
+  /* Login form pane */
   .auth-form-inner{padding:20px 22px;}
+
+  /* Register pane — no extra padding; registerFlow.js injects .reg-flow-wrap */
+  .auth-register-pane { display: none; }
+  .auth-register-pane.active { display: block; }
+
+  /* ── "Token arrived" notice shown when modal opens after email click ── */
+  .auth-invite-notice {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--blue-subtle);
+    border: 1px solid rgba(91,141,239,0.18);
+    border-radius: var(--radius-sm);
+    padding: 9px 13px;
+    font-size: 0.8rem;
+    color: var(--blue);
+    margin: 14px 22px 0;
+    animation: fadeIn 0.3s ease forwards;
+  }
+
   .demo-box{
     background:var(--accent-subtle);border:1px solid rgba(224,90,58,0.15);
     border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:16px;
     font-size:0.78rem;color:var(--text-secondary);
   }
   .demo-box strong{color:var(--accent);}
-  .otp-section{display:none;text-align:center;padding:24px 22px;}
-  .otp-section.active{display:block;}
-  .otp-inputs{display:flex;gap:7px;justify-content:center;margin:18px 0;}
-  .otp-inputs input{
-    width:44px;height:48px;text-align:center;font-size:1.3rem;
-    font-family:var(--mono);font-weight:700;border-radius:var(--radius-sm);
-  }
-  
+
   /* ============================================================
      WRITE REVIEW MODAL
      ============================================================ */
@@ -502,10 +519,6 @@
   /* ============================================================
      BACKEND PLACEHOLDER MARKERS
      ============================================================ */
-  /* Visual indicator for backend placeholders in code comments:
-     🔌 BACKEND_CALL: description
-     These are marked throughout the JS with this pattern.
-  */
   .backend-note{
     display:inline-block;padding:2px 8px;border-radius:4px;
     font-size:0.7rem;font-family:var(--mono);

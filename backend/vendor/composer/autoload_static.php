@@ -57,6 +57,7 @@ class ComposerStaticInitf7f29cba3b221a5def9859bc3443792c
             'PhpParser\\' => 10,
             'PhpOption\\' => 10,
             'PHPStan\\PhpDocParser\\' => 21,
+            'PHPMailer\\PHPMailer\\' => 20,
         ),
         'O' =>
         array (
@@ -195,6 +196,10 @@ class ComposerStaticInitf7f29cba3b221a5def9859bc3443792c
         'PHPStan\\PhpDocParser\\' =>
         array (
             0 => __DIR__ . '/..' . '/phpstan/phpdoc-parser/src',
+        ),
+        'PHPMailer\\PHPMailer\\' =>
+        array (
+            0 => __DIR__ . '/..' . '/phpmailer/phpmailer/src',
         ),
         'OpenApi\\' =>
         array (

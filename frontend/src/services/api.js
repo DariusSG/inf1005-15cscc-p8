@@ -1,417 +1,301 @@
-import { DB } from "../data/mockDB.js";
+const BASE = "/api/v1";
 
-const wait = (ms = 0) => new Promise((resolve) => setTimeout(resolve, ms));
+const authHeaders = () => {
+  const token = localStorage.getItem("access_token");
+  return {
+    "Content-Type": "application/json",
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
+};
 
-const clone = (value) => JSON.parse(JSON.stringify(value));
+// Automatically store a rotated access token returned in X-New-Access-Token header
+const handleResponse = async (res) => {
+  const newToken = res.headers.get("X-New-Access-Token");
+  if (newToken) localStorage.setItem("access_token", newToken);
 
-/*
-  🔌 BACKEND_CALL placeholders preserved as a PHP-ready integration layer.
-
-  Later PHP mapping examples:
-  - GET  /api/auth/session.php
-  - POST /api/auth/login.php
-  - POST /api/auth/register.php
-  - POST /api/auth/verify-otp.php
-  - POST /api/auth/send-otp.php
-  - POST /api/auth/logout.php
-  - GET  /api/modules.php
-  - GET  /api/module.php?code=ICT2003
-  - POST /api/reviews.php
-  - PUT  /api/reviews.php?id=123
-  - POST /api/review-vote.php
-  - POST /api/review-report.php
-  - POST /api/review-comment.php
-  - GET  /api/tutors.php
-  - POST /api/tutors.php
-  - GET  /api/study-groups.php
-  - POST /api/study-groups.php
-  - GET  /api/help-requests.php
-  - POST /api/help-requests.php
-  - GET  /api/admin/reported-reviews.php
-*/
+  const body = await res.json();
+  if (!res.ok) throw new Error(body.error || "Request failed");
+  return body;
+};
 
 export const api = {
+  // ── Auth ───────────────────────────────────────────────────────────────
+
   async getSession() {
-    // 🔌 BACKEND_CALL: GET /api/auth/session — check if user is logged in
-    await wait();
-    return clone(DB.user);
+    // 🔌 BACKEND_CALL: GET /api/v1/auth/me
+    try {
+      return await handleResponse(
+        await fetch(`${BASE}/auth/me`, { headers: authHeaders() })
+      );
+    } catch {
+      return null;
+    }
   },
 
   async login({ email, password }) {
-    // 🔌 BACKEND_CALL: POST /api/auth/login {email, password}
-    await wait();
-
-    const normalizedEmail = String(email || "").trim().toLowerCase();
-    const user = DB.users[normalizedEmail];
-
-    if (!user || user.password !== password) {
-      return {
-        success: false,
-        message: "Invalid email or password.",
-      };
-    }
-
-    DB.user = user;
-
-    return {
-      success: true,
-      user: clone(DB.user),
-    };
-  },
-
-  async registerPending({ name, email, password }) {
-    // 🔌 BACKEND_CALL: POST /api/auth/register {name, email, password}
-    await wait();
-
-    DB._pending = {
-      name,
-      email,
-      password,
-    };
-
-    return {
-      success: true,
-      message: `OTP sent to ${email} (demo: use 123456)`,
-    };
-  },
-
-  async verifyOtp({ otp }) {
-    // 🔌 BACKEND_CALL: POST /api/auth/verify-otp {email, otp}
-    await wait();
-
-    const digits = String(otp || "");
-
-    if ((digits === "123456" || digits.length === 6) && DB._pending) {
-      const pending = DB._pending;
-
-      DB.users[pending.email] = {
-        email: pending.email,
-        name: pending.name,
-        password: pending.password,
-        role: "student",
-        verified: true,
-      };
-
-      DB.user = DB.users[pending.email];
-      delete DB._pending;
-
-      return {
-        success: true,
-        user: clone(DB.user),
-      };
-    }
-
-    return {
-      success: false,
-      message: "Invalid OTP. Try 123456.",
-    };
-  },
-
-  async resendOtp() {
-    // 🔌 BACKEND_CALL: POST /api/auth/send-otp {email} — resend
-    await wait();
-    return {
-      success: true,
-      message: "OTP resent! (demo: 123456)",
-    };
+    // 🔌 BACKEND_CALL: POST /api/v1/auth/login
+    const data = await handleResponse(
+      await fetch(`${BASE}/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      })
+    );
+    localStorage.setItem("access_token", data.access_token);
+    return { success: true, user: data.user ?? { email } };
   },
 
   async logout() {
-    // 🔌 BACKEND_CALL: POST /api/auth/logout — destroy session
-    await wait();
-    DB.user = null;
-    return {
-      success: true,
-    };
+    // 🔌 BACKEND_CALL: POST /api/v1/auth/logout
+    const token = localStorage.getItem("access_token");
+    await fetch(`${BASE}/auth/logout`, {
+      method: "POST",
+      headers: authHeaders(),
+      body: JSON.stringify({ access_token: token }),
+    });
+    localStorage.removeItem("access_token");
+    return { success: true };
   },
 
+  // ── Registration — 2-step email-invite flow ────────────────────────────
+
+  /**
+   * Step 1 — user submits their SIT email.
+   * Backend validates @sit.singaporetech.edu.sg domain and sends invite link.
+   * 🔌 BACKEND_CALL: POST /api/v1/auth/register/request { email }
+   */
+  async requestRegistration({ email }) {
+    try {
+      await handleResponse(
+        await fetch(`${BASE}/auth/register/request`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email }),
+        })
+      );
+      return { success: true };
+    } catch (e) {
+      return { success: false, message: e.message };
+    }
+  },
+
+  /**
+   * Step 1b — called on page load when ?token= is present in the URL.
+   * Returns a masked email so the form can show "Registering as joh***@sit.…"
+   * without exposing the full address in JS state.
+   * 🔌 BACKEND_CALL: GET /api/v1/auth/register/verify?token=
+   */
+  async checkVerifyToken({ token }) {
+    try {
+      const data = await handleResponse(
+        await fetch(
+          `${BASE}/auth/register/verify?token=${encodeURIComponent(token)}`
+        )
+      );
+      return { success: true, email: data.email };
+    } catch (e) {
+      return { success: false, message: e.message };
+    }
+  },
+
+  /**
+   * Step 2 — user fills in name + password after clicking the invite link.
+   * 🔌 BACKEND_CALL: POST /api/v1/auth/register/complete { token, name, password }
+   */
+  async completeRegistration({ token, name, password }) {
+    try {
+      const data = await handleResponse(
+        await fetch(`${BASE}/auth/register/complete`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ token, name, password }),
+        })
+      );
+      localStorage.setItem("access_token", data.access_token);
+      return { success: true };
+    } catch (e) {
+      return { success: false, message: e.message };
+    }
+  },
+
+  // ── Modules ────────────────────────────────────────────────────────────
+
   async getModules() {
-    // 🔌 BACKEND_CALL: GET /api/modules
-    await wait();
-    return clone(Object.values(DB.modules));
+    // 🔌 BACKEND_CALL: GET /api/v1/modules
+    return handleResponse(
+      await fetch(`${BASE}/modules`, { headers: authHeaders() })
+    );
   },
 
   async getModuleByCode(code) {
-    // 🔌 BACKEND_CALL: GET /api/modules/{code}
-    // 🔌 BACKEND_CALL: GET /api/modules/{code}/reviews
-    await wait();
-    return clone(DB.modules[code] || null);
+    // 🔌 BACKEND_CALL: GET /api/v1/modules/{code}
+    return handleResponse(
+      await fetch(`${BASE}/modules/${code}`, { headers: authHeaders() })
+    );
   },
 
+  // ── Reviews ────────────────────────────────────────────────────────────
+
   async submitReview(payload) {
-    // 🔌 BACKEND_CALL: POST /api/reviews {moduleCode, rating, title, content, workload, difficulty, usefulness}
-    // 🔌 BACKEND_CALL: PUT /api/reviews/{id} — for editing existing review
-    await wait();
-
-    const module = DB.modules[payload.moduleCode];
-    if (!module) {
-      return {
-        success: false,
-        message: "Module not found.",
-      };
+    // 🔌 BACKEND_CALL: POST /api/v1/reviews  |  POST /api/v1/reviews/{id} (edit)
+    const isEdit = !!payload.editingId;
+    const url = isEdit
+      ? `${BASE}/reviews/${payload.editingId}`
+      : `${BASE}/reviews`;
+    try {
+      const review = await handleResponse(
+        await fetch(url, {
+          method: "POST",
+          headers: authHeaders(),
+          body: JSON.stringify({
+            module_code: payload.moduleCode,
+            rating: payload.rating,
+            title: payload.title,
+            content: payload.content,
+            workload: payload.workload,
+            difficulty: payload.difficulty,
+            usefulness: payload.usefulness,
+          }),
+        })
+      );
+      return { success: true, review, mode: isEdit ? "edit" : "create" };
+    } catch (e) {
+      return { success: false, message: e.message };
     }
-
-    if (!DB.user) {
-      return {
-        success: false,
-        message: "Please sign in first.",
-      };
-    }
-
-    if (DB.user.role === "admin") {
-      return {
-        success: false,
-        message: "Admins cannot write reviews.",
-      };
-    }
-
-    if (payload.editingId) {
-      const review = module.reviews.find((item) => item.id === payload.editingId);
-
-      if (!review) {
-        return {
-          success: false,
-          message: "Review not found.",
-        };
-      }
-
-      review.rating = payload.rating;
-      review.title = payload.title;
-      review.content = payload.content;
-      review.workload = payload.workload;
-      review.difficulty = payload.difficulty;
-      review.usefulness = payload.usefulness;
-
-      return {
-        success: true,
-        review: clone(review),
-        mode: "edit",
-      };
-    }
-
-    const review = {
-      id: DB.nextId++,
-      author: DB.user.name,
-      email: DB.user.email,
-      rating: payload.rating,
-      title: payload.title,
-      content: payload.content,
-      workload: payload.workload,
-      difficulty: payload.difficulty,
-      usefulness: payload.usefulness,
-      upvotes: 0,
-      downvotes: 0,
-      date: new Date().toISOString().slice(0, 10),
-      comments: [],
-      userVotes: {},
-      reportedBy: [],
-    };
-
-    module.reviews.unshift(review);
-
-    return {
-      success: true,
-      review: clone(review),
-      mode: "create",
-    };
   },
 
   async toggleVote({ moduleCode, reviewId, type }) {
-    // 🔌 BACKEND_CALL: POST /api/review-vote.php
-    await wait();
-
-    const module = DB.modules[moduleCode];
-    const review = module?.reviews.find((item) => item.id === reviewId);
-
-    if (!review) {
-      return {
-        success: false,
-        message: "Review not found.",
-      };
+    // 🔌 BACKEND_CALL: POST /api/v1/reviews/{id}/vote
+    try {
+      const review = await handleResponse(
+        await fetch(`${BASE}/reviews/${reviewId}/vote`, {
+          method: "POST",
+          headers: authHeaders(),
+          body: JSON.stringify({ type }),
+        })
+      );
+      return { success: true, review };
+    } catch (e) {
+      return { success: false, message: e.message };
     }
-
-    if (!DB.user) {
-      return {
-        success: false,
-        message: "Please sign in to vote.",
-      };
-    }
-
-    if (DB.user.role === "admin") {
-      return {
-        success: false,
-        message: "Admins cannot vote on reviews.",
-      };
-    }
-
-    const userEmail = DB.user.email;
-    const previous = review.userVotes[userEmail] || null;
-
-    if (previous === type) {
-      if (type === "up") review.upvotes -= 1;
-      if (type === "down") review.downvotes -= 1;
-      delete review.userVotes[userEmail];
-    } else {
-      if (previous === "up") review.upvotes -= 1;
-      if (previous === "down") review.downvotes -= 1;
-
-      review.userVotes[userEmail] = type;
-
-      if (type === "up") review.upvotes += 1;
-      if (type === "down") review.downvotes += 1;
-    }
-
-    return {
-      success: true,
-      review: clone(review),
-    };
   },
 
   async toggleReport({ moduleCode, reviewId }) {
-    // 🔌 BACKEND_CALL: POST /api/review-report.php
-    await wait();
-
-    const module = DB.modules[moduleCode];
-    const review = module?.reviews.find((item) => item.id === reviewId);
-
-    if (!review) {
-      return {
-        success: false,
-        message: "Review not found.",
-      };
+    // 🔌 BACKEND_CALL: POST /api/v1/reviews/{id}/report
+    try {
+      const result = await handleResponse(
+        await fetch(`${BASE}/reviews/${reviewId}/report`, {
+          method: "POST",
+          headers: authHeaders(),
+          body: JSON.stringify({ reason: "User reported review" }),
+        })
+      );
+      return { success: true, ...result };
+    } catch (e) {
+      return { success: false, message: e.message };
     }
-
-    if (!DB.user) {
-      return {
-        success: false,
-        message: "Please sign in to report.",
-      };
-    }
-
-    if (DB.user.role === "admin") {
-      return {
-        success: false,
-        message: "Admins cannot report reviews.",
-      };
-    }
-
-    const userEmail = DB.user.email;
-    const existingIndex = review.reportedBy.indexOf(userEmail);
-
-    if (existingIndex >= 0) {
-      review.reportedBy.splice(existingIndex, 1);
-    } else {
-      review.reportedBy.push(userEmail);
-    }
-
-    const existingAdminReportIndex = DB.reported.findIndex(
-      (item) => item.reviewId === review.id && item.mc === moduleCode
-    );
-
-    if (review.reportedBy.length > 0) {
-      if (existingAdminReportIndex >= 0) {
-        DB.reported[existingAdminReportIndex].count = review.reportedBy.length;
-      } else {
-        DB.reported.push({
-          reviewId: review.id,
-          mc: moduleCode,
-          title: review.title,
-          count: review.reportedBy.length,
-          reason: "User reported review",
-        });
-      }
-    } else if (existingAdminReportIndex >= 0) {
-      DB.reported.splice(existingAdminReportIndex, 1);
-    }
-
-    return {
-      success: true,
-      review: clone(review),
-      reported: clone(DB.reported),
-    };
   },
 
   async addComment({ moduleCode, reviewId, text }) {
-    // 🔌 BACKEND_CALL: POST /api/review-comment.php
-    await wait();
-
-    const module = DB.modules[moduleCode];
-    const review = module?.reviews.find((item) => item.id === reviewId);
-
-    if (!review) {
-      return {
-        success: false,
-        message: "Review not found.",
-      };
+    // 🔌 BACKEND_CALL: POST /api/v1/reviews/{id}/comments
+    try {
+      const review = await handleResponse(
+        await fetch(`${BASE}/reviews/${reviewId}/comments`, {
+          method: "POST",
+          headers: authHeaders(),
+          body: JSON.stringify({ text }),
+        })
+      );
+      return { success: true, review };
+    } catch (e) {
+      return { success: false, message: e.message };
     }
+  },
 
-    if (!DB.user) {
-      return {
-        success: false,
-        message: "Please sign in to comment.",
-      };
+  // ── Tutors ─────────────────────────────────────────────────────────────
+
+  async getTutors(search = "") {
+    // 🔌 BACKEND_CALL: GET /api/v1/tutors?search=
+    const qs = search ? `?search=${encodeURIComponent(search)}` : "";
+    return handleResponse(
+      await fetch(`${BASE}/tutors${qs}`, { headers: authHeaders() })
+    );
+  },
+
+  async createTutorListing(payload) {
+    // 🔌 BACKEND_CALL: POST /api/v1/tutors
+    try {
+      const tutor = await handleResponse(
+        await fetch(`${BASE}/tutors`, {
+          method: "POST",
+          headers: authHeaders(),
+          body: JSON.stringify(payload),
+        })
+      );
+      return { success: true, tutor };
+    } catch (e) {
+      return { success: false, message: e.message };
     }
-
-    review.comments.push({
-      a: DB.user.name,
-      t: text,
-      time: "Just now",
-    });
-
-    return {
-      success: true,
-      review: clone(review),
-    };
   },
 
-  async getTutors() {
-    // 🔌 BACKEND_CALL: GET /api/tutors?search={query}
-    await wait();
-    return clone(DB.tutors);
+  // ── Study Groups ───────────────────────────────────────────────────────
+
+  async getStudyGroups(search = "") {
+    // 🔌 BACKEND_CALL: GET /api/v1/study-groups?search=
+    const qs = search ? `?search=${encodeURIComponent(search)}` : "";
+    return handleResponse(
+      await fetch(`${BASE}/study-groups${qs}`, { headers: authHeaders() })
+    );
   },
 
-  async createTutorListing() {
-    // 🔌 BACKEND_CALL: POST /api/tutors — create tutor listing
-    await wait();
-    return {
-      success: true,
-      message: "Tutor listing flow placeholder for PHP backend.",
-    };
+  async createStudyGroup(payload) {
+    // 🔌 BACKEND_CALL: POST /api/v1/study-groups
+    try {
+      const group = await handleResponse(
+        await fetch(`${BASE}/study-groups`, {
+          method: "POST",
+          headers: authHeaders(),
+          body: JSON.stringify(payload),
+        })
+      );
+      return { success: true, group };
+    } catch (e) {
+      return { success: false, message: e.message };
+    }
   },
 
-  async getStudyGroups() {
-    // 🔌 BACKEND_CALL: GET /api/study-groups?search={query}
-    await wait();
-    return clone(DB.studyGroups);
+  // ── Help Requests ──────────────────────────────────────────────────────
+
+  async getHelpRequests(search = "") {
+    // 🔌 BACKEND_CALL: GET /api/v1/help-requests?search=
+    const qs = search ? `?search=${encodeURIComponent(search)}` : "";
+    return handleResponse(
+      await fetch(`${BASE}/help-requests${qs}`, { headers: authHeaders() })
+    );
   },
 
-  async createStudyGroup() {
-    // 🔌 BACKEND_CALL: POST /api/study-groups — create new group
-    await wait();
-    return {
-      success: true,
-      message: "Create group flow placeholder for PHP backend.",
-    };
+  async createHelpRequest(payload) {
+    // 🔌 BACKEND_CALL: POST /api/v1/help-requests
+    try {
+      const req = await handleResponse(
+        await fetch(`${BASE}/help-requests`, {
+          method: "POST",
+          headers: authHeaders(),
+          body: JSON.stringify(payload),
+        })
+      );
+      return { success: true, request: req };
+    } catch (e) {
+      return { success: false, message: e.message };
+    }
   },
 
-  async getHelpRequests() {
-    // 🔌 BACKEND_CALL: GET /api/help-requests?search={query}
-    await wait();
-    return clone(DB.helpReqs);
-  },
-
-  async createHelpRequest() {
-    // 🔌 BACKEND_CALL: POST /api/help-requests — create help request
-    await wait();
-    return {
-      success: true,
-      message: "Help request flow placeholder for PHP backend.",
-    };
-  },
+  // ── Admin ──────────────────────────────────────────────────────────────
 
   async getReportedReviews() {
-    // 🔌 BACKEND_CALL: GET /api/admin/reported-reviews — reported_reviews table
-    await wait();
-    return clone(DB.reported);
+    // 🔌 BACKEND_CALL: GET /api/v1/admin/reported-reviews
+    return handleResponse(
+      await fetch(`${BASE}/admin/reported-reviews`, { headers: authHeaders() })
+    );
   },
 };
