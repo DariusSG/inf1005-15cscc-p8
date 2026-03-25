@@ -13,9 +13,6 @@ jobs:
     container:
       image: ghcr.io/catthehacker/ubuntu:act-24.04
       volumes:
-        - /etc/ssl/certs:/etc/ssl/certs:ro
-        - /etc/ssl/certs/ca-certificates.crt:/etc/ssl/certs/ca-certificates.crt:ro
-        - /usr/local/share/ca-certificates:/usr/local/share/ca-certificates:ro
         - /var/run/docker.sock:/var/run/docker.sock
     steps:
       - name: Checkout
@@ -42,6 +39,12 @@ jobs:
           registry: ${{ env.FORGEJO_REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.FORGEJO_TOKEN }}
+
+      - name: Metadata
+        uses: docker/metadata-action@v5
+        id: meta
+        with:
+          images: ${{ env.FORGEJO_REGISTRY }}/${{ env.FORGEJO_IMAGE }}
 
       - name: Build & Push (Bake)
         uses: docker/build-push-action@v7
