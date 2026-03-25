@@ -4,7 +4,7 @@ namespace App\Services;
 
 use App\Repositories\UserRepository;
 use App\Core\Container;
-use App\Core\Log;
+use App\Core\Logger;
 use App\Core\Request;
 
 class AuthService
@@ -104,7 +104,7 @@ class AuthService
                 $accessPayload = $this->tokenService->verifyAccessToken($accessToken);
                 $this->tokenService->revokeAccessToken($accessPayload->jti);
             } catch (\Exception $e) {
-                Log::channel()->warning('Access token logout failed: ' . $e->getMessage(), [
+                Logger::channel()->warning('Access token logout failed: ' . $e->getMessage(), [
                     'user_id' => Request::context('user_id'),
                 ]);
             }

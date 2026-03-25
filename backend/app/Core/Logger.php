@@ -2,10 +2,9 @@
 
 namespace App\Core;
 
-use Monolog\Logger;
 use Monolog\Handler\StreamHandler;
 
-class Log
+class Logger
 {   
 
     private static $instance;
@@ -13,7 +12,7 @@ class Log
     public static function channel()
     {
         if (!self::$instance) {
-            $log = new Logger('app');
+            $log = new \Monolog\Logger('app');
             $log->pushHandler(
                 new StreamHandler(__DIR__.'/../../storage/logs/app.log')
             );

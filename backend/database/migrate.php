@@ -36,15 +36,22 @@ if (!Capsule::schema()->hasTable('migrations')) {
 */
 
 foreach (glob(__DIR__."/migrations/*.php") as $file) {
-
     require $file;
 
-    $class = basename($file, ".php");
+    $filename = basename($file, ".php");
 
-    // Check if migration was already run
-    $alreadyRun = Capsule::table('migrations')->where('migration', $class)->exists();
+    // Convert filename to valid PHP class name
+    // Example: '001_initial_schema' -> 'Migration_001_initial_schema'
+    $class = 'Migration_' . $filename;
+
+    if (!class_exists($class)) {
+        echo "Skipping invalid migration class: $class\n";
+        continue;
+    }
+
+    $alreadyRun = Capsule::table('migrations')->where('migration', $filename)->exists();
     if ($alreadyRun) {
-        echo "Skipping already run migration: $class\n";
+        echo "Skipping already run migration: $filename\n";
         continue;
     }
 
@@ -52,10 +59,10 @@ foreach (glob(__DIR__."/migrations/*.php") as $file) {
 
     try {
         $migration->up();
-        Capsule::table('migrations')->insert(['migration' => $class]);
-        echo "Migration $class completed.\n";
+        Capsule::table('migrations')->insert(['migration' => $filename]);
+        echo "Migration $filename completed.\n";
     } catch (\Exception $e) {
-        echo "Migration $class failed: ".$e->getMessage()."\n";
+        echo "Migration $filename failed: ".$e->getMessage()."\n";
     }
 }
 

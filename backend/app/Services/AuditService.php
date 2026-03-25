@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use App\Core\Log;
+use App\Core\Logger;
 use App\Core\Request;
 
 class AuditService
@@ -28,7 +28,7 @@ class AuditService
             'data' => $data,
         ];
 
-        Log::channel()->info("AUDIT: {$event}", $entry);
+        Logger::channel()->info("AUDIT: {$event}", $entry);
     }
 
     private static function maskEmail(string $email): string

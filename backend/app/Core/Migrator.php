@@ -56,7 +56,13 @@ class Migrator
         foreach (glob(self::MIGRATIONS_DIR . '/*.php') as $file) {
             require_once $file;
 
-            $class = basename($file, '.php');
+            $class = 'Migration_' . basename($file, '.php');
+
+            if (!class_exists($class)) {
+                $errors[] = "Invalid migration class: {$class}";
+                $log("ERROR: Invalid migration class: {$class}");
+                continue;
+            }
 
             if (Capsule::table('migrations')->where('migration', $class)->exists()) {
                 $skipped[] = $class;

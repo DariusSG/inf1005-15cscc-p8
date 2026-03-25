@@ -1,28 +1,6 @@
 # backend/Dockerfile
-# Build context: repository root (docker-bake.hcl sets context=.)
-# For local dev with docker compose, set context: . in docker-compose.yml
 
-# ─────────────────────────────────────────────────────────────────────────────
-# STAGE 1: Install Composer dependencies
-# ─────────────────────────────────────────────────────────────────────────────
-FROM composer:2 AS composer
-
-WORKDIR /app
-
-# Copy only the manifest files first so Docker can cache the vendor layer
-COPY backend/composer.json backend/composer.lock ./
-
-RUN composer install \
-    --no-dev \
-    --no-interaction \
-    --no-progress \
-    --optimize-autoloader \
-    --classmap-authoritative
-
-# ─────────────────────────────────────────────────────────────────────────────
-# STAGE 2: Runtime image
-# ─────────────────────────────────────────────────────────────────────────────
-FROM php:8.3-fpm-alpine
+FROM php:8.4-fpm-alpine
 
 # ── System dependencies ───────────────────────────────────────────────────────
 RUN apk add --no-cache \
@@ -32,7 +10,8 @@ RUN apk add --no-cache \
     oniguruma-dev \
     bash \
     shadow \
-    # needed for mime.types in nginx
+    git \
+    unzip \
     mailcap
 
 # ── PHP extensions ────────────────────────────────────────────────────────────
@@ -44,6 +23,9 @@ RUN docker-php-ext-install \
     zip \
     opcache
 
+# ── Install Composer (FROM official image) ────────────────────────────────────
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+
 # ── PHP configuration ─────────────────────────────────────────────────────────
 COPY backend/docker/php.ini /usr/local/etc/php/conf.d/app.ini
 
@@ -53,24 +35,29 @@ COPY backend/docker/nginx.conf /etc/nginx/nginx.conf
 # ── Application ───────────────────────────────────────────────────────────────
 WORKDIR /var/www
 
-# Copy vendor from composer stage
-COPY --from=composer /app/vendor ./vendor
+# Copy composer files first (cache layer)
+COPY backend/composer.json backend/composer.lock ./
 
-# Copy application source (excludes files listed in .dockerignore)
+# Install dependencies USING PHP 8.4
+RUN composer install \
+    --no-dev \
+    --no-interaction \
+    --no-progress \
+    --optimize-autoloader \
+    --classmap-authoritative \
+    --apcu-autoloader
+
+# Copy app after vendor is built
 COPY backend/ .
+RUN composer install --no-dev -o
 
 # ── Storage directories ───────────────────────────────────────────────────────
-# Create writable directories for logs, rate-limit counters, and the
-# config/config.php installed-flag write-back.
 RUN mkdir -p \
         storage/logs \
         storage/rate_limits \
     && touch storage/logs/app.log \
-    # config/config.php must be writable so AppServiceProvider can persist
-    # the 'installed = true' flag on first boot.
     && chown -R www-data:www-data \
-        /var/www/storage \
-        /var/www/config \
+        /var/www/ \
     && chmod -R 755 /var/www \
     && chmod -R 775 /var/www/storage \
     && chmod 664 /var/www/config/config.php

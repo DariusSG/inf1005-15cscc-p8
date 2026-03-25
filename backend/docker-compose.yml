@@ -1,14 +1,18 @@
-version: "3.8"
-
 # ─────────────────────────────────────────────────────────────────────────────
 # Local development stack
 #
 # Usage:
 #   docker compose up --build
 #
-# The backend service uses the same Dockerfile as production (nginx + php-fpm).
-# Migrations run automatically on first boot via the Nextcloud-style installed
-# flag in config/config.php — no separate migrate service needed.
+# Configuration is done by editing backend/config/config.php directly
+# (Nextcloud-style — no env vars for DB/JWT/mail).
+#
+# The only env vars used at runtime are:
+#   ADMIN_EMAIL  — email for the default admin user (seeded on first boot)
+#   ADMIN_PASS   — password for the default admin user (seeded on first boot)
+#
+# Migrations run automatically on first boot via the installed flag in
+# config/config.php — no separate migrate service needed.
 # ─────────────────────────────────────────────────────────────────────────────
 
 services:
@@ -19,17 +23,17 @@ services:
     container_name: inf1005_db
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASS:-changeme_root}
-      MYSQL_DATABASE:      ${DB_NAME:-inf1005_local}
-      MYSQL_USER:          ${DB_USER:-sitizen}
-      MYSQL_PASSWORD:      ${DB_PASS:-changeme}
+      MYSQL_ROOT_PASSWORD: changeme_root
+      MYSQL_DATABASE:      inf1005_local
+      MYSQL_USER:          sitizen
+      MYSQL_PASSWORD:      changeme
     ports:
       - "3306:3306"
     volumes:
       - db_data:/var/lib/mysql
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost",
-             "-u", "root", "--password=${DB_ROOT_PASS:-changeme_root}"]
+             "-u", "root", "--password=changeme_root"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -42,27 +46,21 @@ services:
       dockerfile: backend/Dockerfile
     container_name: inf1005_backend
     restart: unless-stopped
-    env_file:
-      - .env               # load all env vars from backend/.env
     environment:
-      DB_HOST: db
-      DB_PORT: "3306"
-      DB_NAME: ${DB_NAME:-inf1005_local}
-      DB_USER: ${DB_USER:-sitizen}
-      DB_PASS: ${DB_PASS:-changeme}
-      APP_URL:  ${APP_URL:-http://localhost}
-      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@example.com}
-      ADMIN_PASS:  ${ADMIN_PASS:-changeme_admin}
+      # Only secrets that must not be stored in config/config.php
+      ADMIN_EMAIL: admin@example.com
+      ADMIN_PASS:  changeme_admin
     ports:
       - "80:80"
     depends_on:
       db:
         condition: service_healthy
     volumes:
-      # Mount storage so logs and rate-limit files persist across restarts.
-      # config/config.php is also mounted so the installed flag persists.
+      # Bind-mount config so the installed flag written by Migrator persists
+      # on the host across container rebuilds.
+      - ./config:/var/www/config
+      # Named volume for logs and rate-limit counters
       - backend_storage:/var/www/storage
-      - backend_config:/var/www/config
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost/status.php"]
       interval: 30s
@@ -73,4 +71,3 @@ services:
 volumes:
   db_data:
   backend_storage:
-  backend_config:

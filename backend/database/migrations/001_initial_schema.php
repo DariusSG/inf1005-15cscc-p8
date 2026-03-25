@@ -2,7 +2,7 @@
 
 use Illuminate\Database\Capsule\Manager as Capsule;
 
-class InitialSchema
+class Migration_001_initial_schema
 {
     public function up()
     {

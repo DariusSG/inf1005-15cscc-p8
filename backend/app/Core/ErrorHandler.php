@@ -10,7 +10,7 @@ class ErrorHandler
             $requestId = uniqid('req_', true);
 
             // Log the error
-            Log::channel()->error($e->getMessage(), [
+            Logger::channel()->error($e->getMessage(), [
                 'file'  => $e->getFile(),
                 'line'  => $e->getLine(),
                 'trace' => $e->getTraceAsString(),
@@ -35,7 +35,7 @@ class ErrorHandler
             if ($error && in_array($error['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR])) {
                 $requestId = uniqid('req_', true);
 
-                Log::channel()->error($error['message'], [
+                Logger::channel()->error($error['message'], [
                     'file' => $error['file'],
                     'line' => $error['line'],
                     'request_id' => $requestId,
