@@ -30,7 +30,7 @@ jobs:
         with:
           config-inline: |
             [registry."git.dariussg.intra"]
-              ca=["/etc/ssl/certs/ca-certificates.crt"]
+              ca=["/usr/local/share/ca-certificates/ROOTCA.crt"]
 
       - name: Login to Registry
         uses: docker/login-action@v3
