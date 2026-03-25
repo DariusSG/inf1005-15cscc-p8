@@ -12,7 +12,7 @@ jobs:
     runs-on: linux-amd64
     container:
       image: ghcr.io/catthehacker/ubuntu:act-24.04
-      options: --network host --volume /etc/ssl/certs/ca-certificates.crt:/etc/ssl/certs/ca-certificates.crt:ro
+      options: --network host --volume /etc/ssl/certs:/etc/ssl/certs:ro --volume /etc/ssl/certs/ca-certificates.crt:/etc/ssl/certs/ca-certificates.crt:ro
     steps:
       - name: Checkout
         uses: actions/checkout@v4
