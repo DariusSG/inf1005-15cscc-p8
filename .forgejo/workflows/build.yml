@@ -33,6 +33,7 @@ jobs:
         with:
           buildkitd-config-inline: |
             [registry."git.dariussg.intra"]
+              insecure = true
               ca=["/etc/ssl/certs/ca-certificates.crt"]
 
       - name: Login to Registry
