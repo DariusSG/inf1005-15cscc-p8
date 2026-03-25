@@ -12,7 +12,7 @@ jobs:
     runs-on: linux-amd64
     container:
       image: ghcr.io/catthehacker/ubuntu:act-24.04
-      options: --network host
+      options: --network host --volume /etc/ssl/certs/ca-certificates.crt:/etc/ssl/certs/ca-certificates.crt:ro
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -26,6 +26,10 @@ jobs:
 
       - name: Set up Buildx
         uses: docker/setup-buildx-action@v3
+        with:
+          buildkitd-config-inline: |
+            [registry."git.dariussg.intra"]
+              ca=["/etc/ssl/certs/ca-certificates.crt"]
 
       - name: Login to Registry
         uses: docker/login-action@v3
