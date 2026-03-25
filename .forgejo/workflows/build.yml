@@ -10,7 +10,9 @@ on:
 jobs:
   build:
     runs-on: linux-amd64
-
+    container:
+      image: ubuntu-latest:docker:ghcr.io/catthehacker/
+      options: --network host
     steps:
       - name: Checkout
         uses: actions/checkout@v4
