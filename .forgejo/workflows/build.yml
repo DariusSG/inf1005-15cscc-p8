@@ -16,6 +16,7 @@ jobs:
         - /etc/ssl/certs:/etc/ssl/certs:ro
         - /etc/ssl/certs/ca-certificates.crt:/etc/ssl/certs/ca-certificates.crt:ro
         - /usr/local/share/ca-certificates:/usr/local/share/ca-certificates:ro
+        - /var/run/docker.sock:/var/run/docker.socks
       options: --network host
     steps:
       - name: Checkout
