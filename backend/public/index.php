@@ -10,11 +10,11 @@ use App\Middleware\CorsMiddleware;
 
 /*
 |--------------------------------------------------------------------------
-| Load Environment
+| Load Environment Variables
 |--------------------------------------------------------------------------
 */
-$dotenv = Dotenv::createImmutable(__DIR__.'/..');
-$dotenv->load();
+$dotenv = Dotenv::createImmutable(__DIR__ . '/../');
+$dotenv->safeLoad();
 
 /*
 |--------------------------------------------------------------------------
@@ -88,8 +88,11 @@ $router->middleware(['CorsMiddleware', 'RateLimitMiddleware'], function ($router
             $router->post('/study-groups', 'StudyGroupController@store');
 
             // Help requests
-            $router->get('/help-requests',  'HelpRequestController@index');
-            $router->post('/help-requests', 'HelpRequestController@store');
+            $router->get('/help-requests',              'HelpRequestController@index');
+            $router->post('/help-requests',             'HelpRequestController@store');
+            $router->get('/help-requests/{id}',         'HelpRequestController@show');
+            $router->post('/help-requests/{id}/respond','HelpRequestController@respond');
+            $router->post('/help-requests/{id}/solve',  'HelpRequestController@solve');
 
             // Admin
             $router->middleware(['JwtMiddleware:admin'], function ($router) {

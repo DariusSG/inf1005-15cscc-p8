@@ -2,6 +2,8 @@
 
 namespace App\Core;
 
+
+
 class Cookie
 {
     /**
@@ -109,7 +111,7 @@ class Cookie
      */
     private static function isProduction(): bool
     {
-        return !empty($_ENV['APP_ENV']) && $_ENV['APP_ENV'] === 'production';
+        return !empty(Helpers::config('app.env')) && Helpers::config('app.env') === 'prod';
     }
 
     /**

@@ -86,19 +86,23 @@ class Router
                 // Run middleware
                 // -----------------------------
                 foreach ($data['middleware'] as $mw) {
-                    $class = "App\\Middleware\\$mw";
+                    // Parse middleware with optional parameters (e.g., "JwtMiddleware:admin")
+                    $parts = explode(':', $mw, 2);
+                    $class = "App\\Middleware\\" . $parts[0];
+                    $args = isset($parts[1]) ? explode(',', $parts[1]) : [];
+
                     if (class_exists($class)) {
                         try {
                             // Try DI container first
-                            $instance = Container::resolve($mw);
+                            $instance = Container::resolve($parts[0]);
                             if (method_exists($instance, 'handle')) {
-                                $instance->handle();
+                                $instance->handle(...$args);
                             } else {
-                                $class::handle(); // fallback to static
+                                $class::handle(...$args); // fallback to static
                             }
                         } catch (\Exception $e) {
                             // Fallback to static if container resolution fails
-                            $class::handle();
+                            $class::handle(...$args);
                         }
                     }
                 }

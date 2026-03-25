@@ -1,0 +1,77 @@
+# ===== ENV =====
+
+.env
+.env.*
+!.env.example
+
+# ===== PHP =====
+
+backend/vendor/
+
+# ===== NODE =====
+
+node_modules/
+
+# ===== BUILD OUTPUT =====
+
+dist/
+build/
+
+# ===== LOGS =====
+
+*.log
+
+# ===== OS =====
+
+.DS_Store
+Thumbs.db
+
+# ===== IDE =====
+
+.vscode/
+.idea/
+
+# ===== COMPOSER =====
+
+composer.phar
+
+# ===== CACHE =====
+
+.cache/
+
+# ===== DOCKER =====
+
+*.tar
+
+# ===== TEMP =====
+
+tmp/
+temp/
+
+# ===== FORGEJO =====
+
+.forgejo/.cache
+
+# ===== TEST ARTIFACTS =====
+
+coverage/
+
+# ===== BACKEND BUILD OPTIMIZATION =====
+frontend/
+plans/
+nginx/
+tools/
+md-docs/
+docs/
+
+# keep only what's needed
+!backend/**
+!frontend/**
+!docker-bake.hcl
+
+# Re-exclude large/generated directories that were re-included by !backend/**
+backend/vendor/
+backend/storage/
+backend/tests/
+backend/.env
+backend/.env.*

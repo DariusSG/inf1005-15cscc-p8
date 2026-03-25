@@ -12,9 +12,9 @@ class JwtMiddleware
      /**
      * Handle JWT authentication and optional role-based access
      *
-     * @param array $roles Allowed roles for this route (optional)
+     * @param string ...$roles Allowed roles for this route (variadic)
      */
-    public static function handle(array $roles = [])
+    public static function handle(string ...$roles)
     {
         $header = Request::header('Authorization');
         if (!$header) {
@@ -29,7 +29,7 @@ class JwtMiddleware
             $payload = $tokenService->verifyAccessToken($token);
 
             // RBAC check
-            if (!empty($roles) && !in_array($payload->role, $roles)) {
+            if (!empty($roles) && !in_array($payload->role, $roles, true)) {
                 Response::json(["error" => "Forbidden"], 403);
             }
 
@@ -37,24 +37,7 @@ class JwtMiddleware
             Request::setContext('user_role', $payload->role);
             Request::setContext('token', $payload);
         } catch (ExpiredException $e) {
-
-            $refresh = Request::header('X-Refresh-Token');
-
-            if (!$refresh) {
-                Response::json(["error"=>"Access token expired"],401);
-            }
-
-            $tokenService = Container::resolve('TokenService');
-            $authService = Container::resolve('AuthService');
-            $tokens = $authService->refresh($refresh);
-
-            header("X-New-Access-Token: ".$tokens['access_token']);
-
-            $payload = $tokenService->verifyAccessToken($tokens['access_token']);
-
-            Request::setContext('user_id', $payload->sub);
-            Request::setContext('user_role', $payload->role);
-            Request::setContext('token', $payload);
+            Response::json(["error" => "Access token expired. Please refresh."], 401);
         } catch (\Exception $e) {
             Response::json(["error" => $e->getMessage()], 401);
         }

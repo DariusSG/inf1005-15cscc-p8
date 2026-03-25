@@ -1,0 +1,15 @@
+vendor/
+node_modules
+.env
+.env.*
+
+docs/
+md-docs/
+README.md
+TODO.md
+
+tools/
+*.phar
+
+.git
+docker/

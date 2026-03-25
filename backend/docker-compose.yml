@@ -1,0 +1,76 @@
+version: "3.8"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Local development stack
+#
+# Usage:
+#   docker compose up --build
+#
+# The backend service uses the same Dockerfile as production (nginx + php-fpm).
+# Migrations run automatically on first boot via the Nextcloud-style installed
+# flag in config/config.php — no separate migrate service needed.
+# ─────────────────────────────────────────────────────────────────────────────
+
+services:
+
+  # ── MySQL ──────────────────────────────────────────────────────────────────
+  db:
+    image: mysql:8.0
+    container_name: inf1005_db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASS:-changeme_root}
+      MYSQL_DATABASE:      ${DB_NAME:-inf1005_local}
+      MYSQL_USER:          ${DB_USER:-sitizen}
+      MYSQL_PASSWORD:      ${DB_PASS:-changeme}
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost",
+             "-u", "root", "--password=${DB_ROOT_PASS:-changeme_root}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # ── Backend (nginx + php-fpm via Dockerfile) ───────────────────────────────
+  backend:
+    build:
+      context: ..          # repo root — Dockerfile COPYs from backend/
+      dockerfile: backend/Dockerfile
+    container_name: inf1005_backend
+    restart: unless-stopped
+    env_file:
+      - .env               # load all env vars from backend/.env
+    environment:
+      DB_HOST: db
+      DB_PORT: "3306"
+      DB_NAME: ${DB_NAME:-inf1005_local}
+      DB_USER: ${DB_USER:-sitizen}
+      DB_PASS: ${DB_PASS:-changeme}
+      APP_URL:  ${APP_URL:-http://localhost}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@example.com}
+      ADMIN_PASS:  ${ADMIN_PASS:-changeme_admin}
+    ports:
+      - "80:80"
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      # Mount storage so logs and rate-limit files persist across restarts.
+      # config/config.php is also mounted so the installed flag persists.
+      - backend_storage:/var/www/storage
+      - backend_config:/var/www/config
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost/status.php"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+volumes:
+  db_data:
+  backend_storage:
+  backend_config:

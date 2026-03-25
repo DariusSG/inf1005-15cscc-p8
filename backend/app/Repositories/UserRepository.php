@@ -9,7 +9,7 @@ class UserRepository
     public static function findByEmail(string $email): ?User
     {
         return User::select('id', 'email', 'name', 'password', 'role')
-            ->where('email', $email)
+            ->whereRaw('LOWER(email) = ?', [strtolower($email)])
             ->first();
     }
 
@@ -18,8 +18,12 @@ class UserRepository
         return User::select('id', 'email', 'name', 'role')->find($id);
     }
 
-    public static function create(string $email, string $password, string $role = 'student', string $name = ''): User
-    {
+    public static function create(
+        string $email,
+        string $password,
+        string $role = 'student',
+        string $name = ''
+    ): User {
         return User::create([
             'email'    => strtolower(trim($email)),
             'name'     => $name,

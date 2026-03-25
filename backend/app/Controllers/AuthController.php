@@ -119,7 +119,7 @@ class AuthController
 
             Response::json($tokens, 201);
         } catch (\InvalidArgumentException $e) {
-            Response::json(['error' => $e->getMessage()], 400);
+            Response::json(['error' => 'Invalid registration data'], 400);
         } catch (\RuntimeException $e) {
             Response::json(['error' => $e->getMessage()], 409);
         }

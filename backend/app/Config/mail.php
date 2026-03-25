@@ -2,30 +2,30 @@
 
 namespace App\Config;
 
+use App\Core\Helpers;
+
 class Mail
 {
     public static function config(): array
     {
         return [
-            'host'       => $_ENV['MAIL_HOST']       ?? 'smtp.mailtrap.io',
-            'port'       => (int)($_ENV['MAIL_PORT'] ?? 587),
-            'username'   => $_ENV['MAIL_USERNAME']   ?? '',
-            'password'   => $_ENV['MAIL_PASSWORD']   ?? '',
-            'encryption' => $_ENV['MAIL_ENCRYPTION'] ?? 'tls',
-            'from_email' => $_ENV['MAIL_FROM_EMAIL'] ?? 'noreply@sitizen.app',
-            'from_name'  => $_ENV['MAIL_FROM_NAME']  ?? 'SITizen',
+            'host'       => Helpers::config('mail.host', 'smtp.mailtrap.io'),
+            'port'       => (int) Helpers::config('mail.port', 587),
+            'username'   => Helpers::config('mail.username', ''),
+            'password'   => Helpers::config('mail.password', ''),
+            'encryption' => Helpers::config('mail.encryption', 'tls'),
+            'from_email' => Helpers::config('mail.from_email', 'noreply@example.com'),
+            'from_name'  => Helpers::config('mail.from_name', 'App'),
         ];
     }
 
-    /** Base URL of the frontend, e.g. https://sitizen.app */
     public static function appUrl(): string
     {
-        return rtrim($_ENV['APP_URL'] ?? 'http://localhost:5173', '/');
+        return rtrim(Helpers::config('app.url', ''), '/');
     }
 
-    /** TTL in seconds for the invite link (default 24 h) */
     public static function verifyTtl(): int
     {
-        return (int)($_ENV['MAIL_VERIFY_TTL'] ?? 86400);
+        return (int) Helpers::config('mail.verify_ttl', 86400);
     }
 }

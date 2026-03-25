@@ -2,42 +2,44 @@
 
 namespace App\Config;
 
+use App\Core\Helpers;
+
 class JwtConfig
 {
-    public static function keys()
+    public static function keys(): array
     {
-        return [
-            "v1" => $_ENV['JWT_SECRET_V1'] ?? 'secret1',
-            "v2" => $_ENV['JWT_SECRET_V2'] ?? 'secret2'
+        return Helpers::config('jwt.keys') ?: [
+            'v1' => 'secret1',
+            'v2' => 'secret2',
         ];
     }
 
-    public static function currentKid()
+    public static function currentKid(): string
     {
-        return $_ENV['JWT_CURRENT_KID'] ?? 'v1';
+        return Helpers::config('jwt.current_kid') ?: 'v1';
     }
 
-    public static function secret(string $kid)
+    public static function secret(string $kid): string
     {
         $keys = self::keys();
         if (!isset($keys[$kid])) {
-            throw new \Exception("Invalid key id");
+            throw new \Exception("Invalid key id: $kid");
         }
         return $keys[$kid];
     }
 
-    public static function expire()
+    public static function expire(): int
     {
-        return $_ENV['JWT_EXPIRE'] ?? 3600;
+        return (int) Helpers::config('jwt.expire', 3600);
     }
 
-    public static function access_ttl()
+    public static function access_ttl(): int
     {
-        return $_ENV['JWT_TTL_ACCESS'] ?? 900;
+        return (int) Helpers::config('jwt.access_ttl', 900);
     }
 
-    public static function refresh_ttl()
+    public static function refresh_ttl(): int
     {
-        return $_ENV['JWT_TTL_REFRESH'] ?? 604800;
+        return (int) Helpers::config('jwt.refresh_ttl', 604800);
     }
 }

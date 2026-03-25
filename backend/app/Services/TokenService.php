@@ -3,9 +3,11 @@
 namespace App\Services;
 
 use Firebase\JWT\JWT;
+use Firebase\JWT\JWTException;
 use Firebase\JWT\Key;
 use App\Config\JwtConfig;
 use App\Models\Session;
+use Illuminate\Database\Capsule\Manager as Capsule;
 use App\Models\RefreshToken;
 use Carbon\Carbon;
 
@@ -13,6 +15,8 @@ class TokenService
 {
     private const ISSUER = "sitizen-api";
     private const AUDIENCE = "sitizen-client";
+
+    private const BIND_TO_IP = true;
 
     /**
      * Create access token, store JTI in sessions table
@@ -36,8 +40,8 @@ class TokenService
             'user_id'    => $userId,
             'jti'        => $jti,
             'refresh_jti'=> $refreshJti,
-            'ip'         => $_SERVER['REMOTE_ADDR'] ?? null,
-            'user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? null,
+            'ip'         => self::BIND_TO_IP ? ($_SERVER['REMOTE_ADDR'] ?? null) : null,
+            'user_agent' => self::BIND_TO_IP ? ($_SERVER['HTTP_USER_AGENT'] ?? null) : null,
             'expires_at' => Carbon::createFromTimestamp($payload['exp']),
             'revoked'    => false
         ]);
@@ -70,11 +74,40 @@ class TokenService
         }
 
         $session = Session::where('jti', $payload->jti)->first();
+        if ($session && self::BIND_TO_IP) {
+            $clientIp = self::normalizeIp($_SERVER['REMOTE_ADDR'] ?? '');
+            $tokenIp = self::normalizeIp($session->ip ?? '');
+            
+            if ($tokenIp && $clientIp !== $tokenIp) {
+                throw new \Exception("Token used from unexpected location");
+            }
+        }
+
+        $session = Session::where('jti', $payload->jti)->first();
         if (!$session || $session->revoked || strtotime($session->expires_at) < time()) {
             throw new \Exception("Access token revoked or expired");
         }
 
         return $payload;
+    }
+
+    /**
+     * Normalize IP address for comparison
+     * Handles IPv4-mapped IPv6 addresses
+     */
+    private static function normalizeIp(string $ip): string
+    {
+        // Handle empty IP
+        if (empty($ip)) {
+            return '';
+        }
+        
+        // Check for IPv4-mapped IPv6 (::ffff:192.168.1.1)
+        if (str_starts_with($ip, '::ffff:')) {
+            $ip = substr($ip, 7);
+        }
+        
+        return $ip;
     }
 
     /**
@@ -129,12 +162,55 @@ class TokenService
     }
 
     /**
-     * Verify refresh token, check DB for rotation
+     * Verify and atomically consume refresh token to prevent race conditions
+     */
+    public function verifyAndConsumeRefreshToken(string $token): object
+    {
+        $header = json_decode(base64_decode(explode('.', $token)[0]));
+        $kid = $header->kid ?? JwtConfig::currentKid();
+
+        $hash = hash('sha256', $token);
+
+        // Use atomic transaction to prevent race conditions
+        return Capsule::connection()->transaction(function () use ($token, $hash, $kid) {
+            $payload = JWT::decode(
+                $token,
+                new Key(JwtConfig::secret($kid), 'HS256')
+            );
+
+            if ($payload->iss !== self::ISSUER || $payload->aud !== self::AUDIENCE) {
+                throw new \Exception("Invalid token issuer/audience");
+            }
+
+            $dbToken = RefreshToken::where('jti', $payload->jti)
+                                   ->where('token_hash', $hash)
+                                   ->lockForUpdate()  // Lock row for atomic update
+                                   ->first();
+
+            if (!$dbToken || $dbToken->revoked || Carbon::now()->gt($dbToken->expires_at)) {
+                if ($dbToken && $dbToken->revoked) {
+                    Session::where('refresh_jti', $payload->jti)->update(['revoked' => true]);
+                }
+                throw new \Exception("Refresh token revoked or expired");
+            }
+
+            // Atomically mark as consumed
+            $dbToken->revoked = true;
+            $dbToken->save();
+
+            return $payload;
+        });
+    }
+
+
+    /**
+     * Verify a refresh token without consuming it.
+     * Used during logout to obtain the JTI before revoking.
      */
     public function verifyRefreshToken(string $token): object
     {
         $header = json_decode(base64_decode(explode('.', $token)[0]));
-        $kid = $header->kid ?? JwtConfig::currentKid();
+        $kid    = $header->kid ?? JwtConfig::currentKid();
 
         $payload = JWT::decode(
             $token,
@@ -145,15 +221,12 @@ class TokenService
             throw new \Exception("Invalid token issuer/audience");
         }
 
-        $hash = hash('sha256', $token);
-        $dbToken = RefreshToken::where('jti', $payload->jti)->where('token_hash', $hash)->first();
-        if (!$dbToken || $dbToken->revoked || strtotime($dbToken->expires_at) < time()) {
-            if ($dbToken && $dbToken->revoked) {
-                // replay attack detected → revoke entire session
-                Session::where('refresh_jti', $payload->jti)
-                    ->update(['revoked' => true]);
-            }
-   
+        $hash    = hash('sha256', $token);
+        $dbToken = RefreshToken::where('jti', $payload->jti)
+                               ->where('token_hash', $hash)
+                               ->first();
+
+        if (!$dbToken || $dbToken->revoked || Carbon::now()->gt($dbToken->expires_at)) {
             throw new \Exception("Refresh token revoked or expired");
         }
 
@@ -175,7 +248,7 @@ class TokenService
     /**
      * Build new access + refresh token pair
      */
-    public function rotateRefreshToken(int $userId, string $role = "user"): array
+    public function rotateRefreshToken(int $userId, string $role = "student"): array
     {
         $refreshToken = $this->createRefreshToken($userId);
 

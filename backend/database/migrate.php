@@ -8,18 +8,10 @@ use Illuminate\Database\Capsule\Manager as Capsule;
 
 /*
 |--------------------------------------------------------------------------
-| Load ENV
-|--------------------------------------------------------------------------
-*/
-
-$dotenv = Dotenv::createImmutable(__DIR__.'/..');
-$dotenv->load();
-
-/*
-|--------------------------------------------------------------------------
 | Init DB
 |--------------------------------------------------------------------------
 */
+
 
 Database::init();
 
@@ -81,7 +73,7 @@ $adminPassword = $_ENV['ADMIN_PASS'] ?? 'password';
 $existingAdmin = UserRepository::findByEmail($adminEmail);
 
 if (!$existingAdmin) {
-    $hashed = password_hash($adminPassword, PASSWORD_BCRYPT);
+    $hashed = password_hash($adminPassword, PASSWORD_ARGON2ID);
     $admin = UserRepository::create($adminEmail, $hashed);
     $admin->role = 'admin';
     $admin->save();

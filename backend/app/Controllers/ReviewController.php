@@ -2,6 +2,7 @@
 
 namespace App\Controllers;
 
+use App\Core\Validators;
 use App\Core\Request;
 use App\Core\Response;
 use App\Middleware\JwtMiddleware;
@@ -10,6 +11,36 @@ use App\Repositories\ModuleRepository;
 
 class ReviewController
 {
+    /**
+     * @OA\Get(path="/reviews", summary="List reviews",
+     *   security={{"bearerAuth":{}}},
+     *   @OA\Parameter(name="page", in="query", @OA\Schema(type="integer")),
+     *   @OA\Parameter(name="per_page", in="query", @OA\Schema(type="integer")),
+     *   @OA\Parameter(name="module_code", in="query", @OA\Schema(type="string")),
+     *   @OA\Parameter(name="search", in="query", @OA\Schema(type="string")),
+     *   @OA\Response(response=200, description="Paginated list of reviews")
+     * )
+     */
+    public function index()
+    {
+        $userId = JwtMiddleware::userId() ?? 0;
+        $page = max(1, (int) ($_GET['page'] ?? 1));
+        $perPage = min(100, max(1, (int) ($_GET['per_page'] ?? 20)));
+        $moduleCode = $_GET['module_code'] ?? null;
+        $search = Validators::search($_GET['search'] ?? null);
+
+        $result = ReviewRepository::paginate([
+            'user_id' => $userId,
+            'module_code' => $moduleCode,
+            'search' => $search,
+        ], $perPage, $page);
+
+        Response::json([
+            'data' => $result['data'],
+            'meta' => $result['meta'],
+        ]);
+    }
+
     /**
      * @OA\Post(path="/reviews", summary="Create a review",
      *   security={{"bearerAuth":{}}},
@@ -39,36 +70,39 @@ class ReviewController
             Response::json(['error' => 'Admins cannot write reviews'], 403);
         }
 
-        $moduleCode = strtoupper(trim($data['module_code'] ?? ''));
-        if (!$moduleCode || !ModuleRepository::findByCode($moduleCode)) {
-            Response::json(['error' => 'Module not found'], 404);
+        try {
+            $moduleCode = Validators::moduleCode($data['module_code'] ?? '');
+            if (!ModuleRepository::findByCode($moduleCode)) {
+                Response::json(['error' => 'Module not found'], 404);
+            }
+
+
+            $rating = Validators::rating($data['rating'] ?? 0);
+            $title = Validators::title($data['title'] ?? '');
+            $content = Validators::text($data['content'] ?? '');
+
+
+            $workload = isset($data['workload']) ? Validators::text($data['workload'], 50) : null;
+            $difficulty = isset($data['difficulty']) ? Validators::text($data['difficulty'], 50) : null;
+            $usefulness = isset($data['usefulness']) ? Validators::text($data['usefulness'], 50) : null;
+
+
+            $review = ReviewRepository::create([
+                'module_code' => $moduleCode,
+                'user_id'     => $userId,
+                'rating'      => $rating,
+                'title'       => $title,
+                'content'     => $content,
+                'workload'    => $workload,
+               'difficulty'  => $difficulty,
+                'usefulness'  => $usefulness,
+            ]);
+
+            Response::json(ReviewRepository::format($review->fresh(['author', 'comments']), $userId), 201);
+        } catch (\InvalidArgumentException $e) {
+            Response::json(['error' => $e->getMessage()], 400);
         }
 
-        $rating = (int)($data['rating'] ?? 0);
-        if ($rating < 1 || $rating > 5) {
-            Response::json(['error' => 'Rating must be between 1 and 5'], 400);
-        }
-
-        if (empty(trim($data['title'] ?? ''))) {
-            Response::json(['error' => 'Title is required'], 400);
-        }
-
-        if (empty(trim($data['content'] ?? ''))) {
-            Response::json(['error' => 'Content is required'], 400);
-        }
-
-        $review = ReviewRepository::create([
-            'module_code' => $moduleCode,
-            'user_id'     => $userId,
-            'rating'      => $rating,
-            'title'       => trim($data['title']),
-            'content'     => trim($data['content']),
-            'workload'    => $data['workload']   ?? null,
-            'difficulty'  => $data['difficulty'] ?? null,
-            'usefulness'  => $data['usefulness'] ?? null,
-        ]);
-
-        Response::json(ReviewRepository::format($review->fresh(['author', 'comments']), $userId), 201);
     }
 
     /**
@@ -96,19 +130,32 @@ class ReviewController
             Response::json(['error' => 'Forbidden'], 403);
         }
 
-        $rating = isset($data['rating']) ? (int)$data['rating'] : $review->rating;
-        if ($rating < 1 || $rating > 5) {
-            Response::json(['error' => 'Rating must be between 1 and 5'], 400);
+        try {
+            $rating     = isset($data['rating'])
+                ? Validators::rating($data['rating'])
+                : $review->rating;
+            $title      = isset($data['title'])
+                ? Validators::title($data['title'])
+                : $review->title;
+            $content    = isset($data['content'])
+                ? Validators::text($data['content'])
+                : $review->content;
+            $workload   = isset($data['workload'])
+                ? Validators::text($data['workload'], 50)
+                : $review->workload;
+            $difficulty = isset($data['difficulty'])
+                ? Validators::text($data['difficulty'], 50)
+                : $review->difficulty;
+            $usefulness = isset($data['usefulness'])
+                ? Validators::text($data['usefulness'], 50)
+                : $review->usefulness;
+        } catch (\InvalidArgumentException $e) {
+            Response::json(['error' => $e->getMessage()], 400);
         }
 
-        $updated = ReviewRepository::update($review, [
-            'rating'     => $rating,
-            'title'      => trim($data['title']   ?? $review->title),
-            'content'    => trim($data['content'] ?? $review->content),
-            'workload'   => $data['workload']   ?? $review->workload,
-            'difficulty' => $data['difficulty'] ?? $review->difficulty,
-            'usefulness' => $data['usefulness'] ?? $review->usefulness,
-        ]);
+        $updated = ReviewRepository::update($review, compact(
+            'rating', 'title', 'content', 'workload', 'difficulty', 'usefulness'
+        ));
 
         Response::json(ReviewRepository::format($updated->load(['author', 'comments']), $userId));
     }

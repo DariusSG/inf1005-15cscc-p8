@@ -18,28 +18,20 @@ class AuthService
 
     // ── Step 1: validate email + send invite ────────────────────────────
 
-    /**
-     * Validates the SIT email domain and fires off the invite email.
-     * Does NOT create a user yet.
-     */
     public function requestRegistration(string $email): void
     {
         /** @var VerificationService $vs */
         $vs = Container::resolve('VerificationService');
-        $vs->sendInvite($email); // throws InvalidArgumentException on bad domain
+        $vs->sendInvite($email);
     }
 
     // ── Step 2: complete registration via token ─────────────────────────
 
-    /**
-     * Verifies the invite token, creates the user account, returns tokens.
-     */
     public function completeRegistration(string $rawToken, string $name, string $password): array
     {
         /** @var VerificationService $vs */
         $vs = Container::resolve('VerificationService');
 
-        // Will throw if token is invalid/expired/used
         $email = $vs->verifyToken($rawToken);
 
         if (UserRepository::findByEmail($email)) {
@@ -55,9 +47,9 @@ class AuthService
         }
 
         $hashed = password_hash($password, PASSWORD_ARGON2ID);
-        $user   = UserRepository::create($email, $hashed, 'student', trim($name));
 
-        // Mark token as consumed only after account creation succeeds
+        $user = UserRepository::create($email, $hashed, 'student', trim($name));
+
         $vs->consumeToken($rawToken);
 
         return $this->tokenService->rotateRefreshToken($user->id, $user->role ?? 'student');
@@ -68,7 +60,12 @@ class AuthService
     public function login(string $email, string $password): ?array
     {
         $user = UserRepository::findByEmail($email);
-        if (!$user || !password_verify($password, $user->password)) {
+        $success = $user && password_verify($password, $user->password);
+
+        AuditService::logLogin($email, $success,
+            $success ? null : ($user ? 'invalid_password' : 'user_not_found'));
+
+        if (!$success) {
             return null;
         }
 
@@ -84,15 +81,14 @@ class AuthService
 
     public function refresh(string $refreshToken): array
     {
-        $payload = $this->tokenService->verifyRefreshToken($refreshToken);
-        $this->tokenService->revokeRefreshToken($payload->jti);
+        $payload = $this->tokenService->verifyAndConsumeRefreshToken($refreshToken);
 
         $user = UserRepository::findById($payload->sub);
         if (!$user) {
             throw new \RuntimeException('User not found');
         }
 
-        return $this->tokenService->rotateRefreshToken($user->id, $user->role ?? 'student');
+        return $this->tokenService->rotateRefreshToken($user->id, $user->role ?? 'student', $payload->jti);
     }
 
     // ── Logout ───────────────────────────────────────────────────────────
