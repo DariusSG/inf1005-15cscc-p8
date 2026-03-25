@@ -40,12 +40,6 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.FORGEJO_TOKEN }}
 
-      - name: Metadata
-        uses: docker/metadata-action@v5
-        id: meta
-        with:
-          images: ${{ env.FORGEJO_REGISTRY }}/${{ env.FORGEJO_IMAGE }}
-
       - name: Build & Push (Bake)
         uses: docker/build-push-action@v7
         with:
