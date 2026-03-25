@@ -2,33 +2,50 @@
 
 namespace App\Console;
 
+use App\Config\Database;
+use App\Core\Migrator;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-
-#[AsCommand(name: 'app:migrate', description: 'Run database migrations')]
+#[AsCommand(name: 'app:migrate', description: 'Run pending database migrations')]
 class MigrateCommand extends Command
 {
-    protected static $defaultName = 'app:migrate';
-
     protected function configure(): void
     {
-        $this->setDescription('Run database migrations');
+        $this->setDescription('Run pending database migrations and seed the default admin user on first run.');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $output->writeln('Running migrations...');
-        passthru('php ' . escapeshellarg(__DIR__.'/../../database/migrate.php'), $status);
-
-        if ($status === 0) {
-            $output->writeln('Migrations completed successfully.');
-            return Command::SUCCESS;
+        // Initialise DB connection (no HTTP bootstrap needed)
+        try {
+            Database::init();
+        } catch (\Throwable $e) {
+            $output->writeln('<error>Database connection failed: ' . $e->getMessage() . '</error>');
+            return Command::FAILURE;
         }
 
-        $output->writeln('Migrations failed.');
-        return Command::FAILURE;
+        $output->writeln('Running migrations…');
+
+        $result = Migrator::run(function (string $msg) use ($output) {
+            $output->writeln('  ' . $msg);
+        });
+
+        if (!empty($result['ran'])) {
+            $output->writeln('<info>Applied ' . count($result['ran']) . ' migration(s).</info>');
+        } else {
+            $output->writeln('<info>No pending migrations.</info>');
+        }
+
+        if (!empty($result['errors'])) {
+            foreach ($result['errors'] as $err) {
+                $output->writeln('<error>' . $err . '</error>');
+            }
+            return Command::FAILURE;
+        }
+
+        return Command::SUCCESS;
     }
 }

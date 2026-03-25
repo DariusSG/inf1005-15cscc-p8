@@ -2,19 +2,11 @@
 
 require __DIR__.'/../vendor/autoload.php';
 
-use Dotenv\Dotenv;
 use App\Core\Router;
+use App\Core\Helpers;
 use App\Providers\AppServiceProvider;
 use App\Core\ErrorHandler;
 use App\Middleware\CorsMiddleware;
-
-/*
-|--------------------------------------------------------------------------
-| Load Environment Variables
-|--------------------------------------------------------------------------
-*/
-$dotenv = Dotenv::createImmutable(__DIR__ . '/../');
-$dotenv->safeLoad();
 
 /*
 |--------------------------------------------------------------------------
@@ -25,10 +17,26 @@ ErrorHandler::register();
 
 /*
 |--------------------------------------------------------------------------
-| Initialize Services / Database
+| Initialize Services / Database + Auto-migrate
 |--------------------------------------------------------------------------
 */
 AppServiceProvider::register();
+
+/*
+|--------------------------------------------------------------------------
+| Installed check — return 503 if migrations have never been run
+|--------------------------------------------------------------------------
+*/
+if (!Helpers::config('app.installed', false)) {
+    http_response_code(503);
+    header('Content-Type: application/json');
+    echo json_encode([
+        'error'   => 'not_installed',
+        'message' => 'The application has not been installed yet. '
+                   . 'Run migrations via: ./occ app:migrate',
+    ]);
+    exit;
+}
 
 /*
 |--------------------------------------------------------------------------
@@ -69,12 +77,12 @@ $router->middleware(['CorsMiddleware', 'RateLimitMiddleware'], function ($router
             });
 
             // Modules
-            $router->get('/modules',       'ModuleController@index');
+            $router->get('/modules',        'ModuleController@index');
             $router->get('/modules/{code}', 'ModuleController@show');
 
             // Reviews
             $router->post('/reviews',               'ReviewController@store');
-            $router->post('/reviews/{id}',          'ReviewController@update');  // PUT-as-POST fallback
+            $router->post('/reviews/{id}',          'ReviewController@update');
             $router->post('/reviews/{id}/vote',     'ReviewController@vote');
             $router->post('/reviews/{id}/report',   'ReviewController@report');
             $router->post('/reviews/{id}/comments', 'ReviewController@addComment');
@@ -88,11 +96,11 @@ $router->middleware(['CorsMiddleware', 'RateLimitMiddleware'], function ($router
             $router->post('/study-groups', 'StudyGroupController@store');
 
             // Help requests
-            $router->get('/help-requests',              'HelpRequestController@index');
-            $router->post('/help-requests',             'HelpRequestController@store');
-            $router->get('/help-requests/{id}',         'HelpRequestController@show');
-            $router->post('/help-requests/{id}/respond','HelpRequestController@respond');
-            $router->post('/help-requests/{id}/solve',  'HelpRequestController@solve');
+            $router->get('/help-requests',               'HelpRequestController@index');
+            $router->post('/help-requests',              'HelpRequestController@store');
+            $router->get('/help-requests/{id}',          'HelpRequestController@show');
+            $router->post('/help-requests/{id}/respond', 'HelpRequestController@respond');
+            $router->post('/help-requests/{id}/solve',   'HelpRequestController@solve');
 
             // Admin
             $router->middleware(['JwtMiddleware:admin'], function ($router) {

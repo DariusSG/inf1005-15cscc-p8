@@ -1,48 +1,62 @@
 <?php
 
+/**
+ * Application configuration — edit this file directly (Nextcloud-style).
+ *
+ * DO NOT use $_ENV here (except for secrets that must never be committed,
+ * such as the initial admin password which is seeded from ADMIN_PASS env var).
+ *
+ * After the first successful migration run, 'app.installed' is automatically
+ * set to true by AppServiceProvider and written back to this file.
+ */
+
 return [
 
     'app' => [
         'version'   => '1.0.0',
-        'url'       => $_ENV['APP_URL'] ?? 'https://example.com',
-        'installed' => false,   // set to true automatically after first successful migration
+        'url'       => 'http://localhost',
+        'installed' => false,   // written to true automatically on first boot
     ],
 
     'cors' => [
-        'allowed_origins' => $_ENV['CORS_ALLOWED_ORIGINS'] ?? '',
+        // Comma-separated list of allowed origins.
+        // Empty string = allow all (development only — restrict in production).
+        'allowed_origins' => '',
     ],
 
     'database' => [
-        'driver'    => $_ENV['DB_DRIVER']    ?? 'mysql',
-        'host'      => $_ENV['DB_HOST']      ?? 'localhost',
-        'name'      => $_ENV['DB_NAME']      ?? '',
-        'username'  => $_ENV['DB_USER']      ?? '',
-        'password'  => $_ENV['DB_PASS']      ?? '',
+        'driver'    => 'mysql',
+        'host'      => 'db',
+        'name'      => 'inf1005_local',
+        'username'  => 'sitizen',
+        'password'  => 'changeme',
         'charset'   => 'utf8mb4',
         'collation' => 'utf8mb4_unicode_ci',
         'prefix'    => '',
     ],
 
     'jwt' => [
+        // Generate strong random secrets before deploying to production.
+        // Minimum 32 characters recommended.
         'keys' => [
-            'v1' => $_ENV['JWT_SECRET_V1'] ?? 'changeme_v1',
-            'v2' => $_ENV['JWT_SECRET_V2'] ?? 'changeme_v2',
+            'v1' => 'changeme_jwt_secret_v1_replace_me',
+            'v2' => 'changeme_jwt_secret_v2_replace_me',
         ],
-        'current_kid' => $_ENV['JWT_CURRENT_KID'] ?? 'v1',
-        'expire'      => (int) ($_ENV['JWT_EXPIRE']      ?? 3600),
-        'access_ttl'  => (int) ($_ENV['JWT_ACCESS_TTL']  ?? 900),
-        'refresh_ttl' => (int) ($_ENV['JWT_REFRESH_TTL'] ?? 604800),
+        'current_kid' => 'v1',
+        'expire'      => 3600,
+        'access_ttl'  => 900,      // 15 minutes
+        'refresh_ttl' => 604800,   // 7 days
     ],
 
     'mail' => [
-        'host'       => $_ENV['MAIL_HOST']       ?? 'smtp.mailtrap.io',
-        'port'       => (int) ($_ENV['MAIL_PORT'] ?? 587),
-        'username'   => $_ENV['MAIL_USERNAME']   ?? '',
-        'password'   => $_ENV['MAIL_PASSWORD']   ?? '',
-        'encryption' => $_ENV['MAIL_ENCRYPTION'] ?? 'tls',
-        'from_email' => $_ENV['MAIL_FROM_EMAIL'] ?? 'noreply@example.com',
-        'from_name'  => $_ENV['MAIL_FROM_NAME']  ?? 'App',
-        'verify_ttl' => (int) ($_ENV['MAIL_VERIFY_TTL'] ?? 86400),
+        'host'       => 'smtp.mailtrap.io',
+        'port'       => 587,
+        'username'   => '',
+        'password'   => '',
+        'encryption' => 'tls',
+        'from_email' => 'noreply@example.com',
+        'from_name'  => 'SITizen',
+        'verify_ttl' => 86400,   // 24 hours
     ],
 
 ];

@@ -2,38 +2,59 @@
 
 namespace App\Console;
 
+use App\Config\Database;
 use App\Core\Helpers;
-
+use App\Core\Migrator;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-
 #[AsCommand(name: 'app:status', description: 'Show application status')]
 class StatusCommand extends Command
 {
-    protected static $defaultName = 'app:status';
-
     protected function configure(): void
     {
-        $this->setDescription('Show application status');
+        $this->setDescription('Show application version, installation state, and database status.');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $output->writeln('Application Status');
-        $output->writeln('------------------');
+        $output->writeln('');
+        $output->writeln('<info>SITizen API — Application Status</info>');
+        $output->writeln(str_repeat('─', 40));
 
-        $output->writeln('Version: ' . (Helpers::config('app.version', 'dev')));
+        // ── Version ───────────────────────────────────────────────────────
+        $output->writeln('Version   : ' . Helpers::config('app.version', 'dev'));
+
+        // ── Installed flag ────────────────────────────────────────────────
+        $installed = Helpers::config('app.installed', false);
+        $output->writeln('Installed : ' . ($installed ? '<info>yes</info>' : '<comment>no</comment>'));
+
+        // ── Database ──────────────────────────────────────────────────────
         try {
+            Database::init();
             \Illuminate\Database\Capsule\Manager::connection()->getPdo();
-            $output->writeln('Database: OK');
-        } catch (\Exception $e) {
-            $output->writeln('Database: FAILED');
-            $output->writeln('Error: '. $e->getMessage());
+            $output->writeln('Database  : <info>connected</info>');
+        } catch (\Throwable $e) {
+            $output->writeln('Database  : <error>FAILED — ' . $e->getMessage() . '</error>');
+            $output->writeln('');
+            return Command::FAILURE;
         }
 
+        // ── Migrations table ──────────────────────────────────────────────
+        $hasMigrTable = Migrator::hasMigrationsTable();
+        $output->writeln('Migrations table : ' . ($hasMigrTable ? '<info>exists</info>' : '<comment>missing</comment>'));
+
+        if ($hasMigrTable) {
+            $applied = Migrator::appliedMigrations();
+            $output->writeln('Applied migrations (' . count($applied) . '):');
+            foreach ($applied as $m) {
+                $output->writeln('  ✔ ' . $m);
+            }
+        }
+
+        $output->writeln('');
         return Command::SUCCESS;
     }
 }
