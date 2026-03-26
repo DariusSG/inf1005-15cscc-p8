@@ -50,3 +50,4 @@ jobs:
             FORGEJO_REGISTRY=${{ env.FORGEJO_REGISTRY }}
             FORGEJO_IMAGE=${{ env.FORGEJO_IMAGE }}
             TAG=${{ env.TAG }}
+            GIT_SSL_NO_VERIFY=true
