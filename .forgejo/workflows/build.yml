@@ -40,15 +40,13 @@ jobs:
           password: ${{ secrets.FORGEJO_TOKEN }}
 
       - name: Build & Push (Bake)
-        uses: docker/build-push-action@v7
+        uses: docker/bake-action@v7
+        env:
+          FORGEJO_REGISTRY: ${{ env.FORGEJO_REGISTRY }}
+          FORGEJO_IMAGE: ${{ env.FORGEJO_IMAGE }}
+          TAG: ${{ env.TAG }}
         with:
-          context: .
           files: docker-bake.hcl
           targets: default
           push: ${{ github.ref == 'refs/heads/main' }}
-          set: |
-            *.context=.
-          build-args: |
-            FORGEJO_REGISTRY=${{ env.FORGEJO_REGISTRY }}
-            FORGEJO_IMAGE=${{ env.FORGEJO_IMAGE }}
-            TAG=${{ env.TAG }}
+      
