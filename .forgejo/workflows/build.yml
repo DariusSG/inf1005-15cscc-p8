@@ -42,13 +42,13 @@ jobs:
       - name: Build & Push (Bake)
         uses: docker/build-push-action@v7
         with:
-          source: .
-          files: docker-bake.hcl          
+          context: .
+          files: docker-bake.hcl
           targets: default
           push: ${{ github.ref == 'refs/heads/main' }}
-          tags: ${{ steps.meta.outputs.tags }}
+          set: |
+            *.context=.
           build-args: |
             FORGEJO_REGISTRY=${{ env.FORGEJO_REGISTRY }}
             FORGEJO_IMAGE=${{ env.FORGEJO_IMAGE }}
             TAG=${{ env.TAG }}
-            GIT_SSL_NO_VERIFY=true
