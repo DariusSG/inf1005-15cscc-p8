@@ -49,5 +49,5 @@ jobs:
           source: .
           files: docker-bake.hcl
           targets: default
-          push: ${{ github.ref == 'refs/heads/main' }}
+          push: true
       
