@@ -46,6 +46,7 @@ jobs:
           FORGEJO_IMAGE: ${{ env.FORGEJO_IMAGE }}
           TAG: ${{ env.TAG }}
         with:
+          source: .
           files: docker-bake.hcl
           targets: default
           push: ${{ github.ref == 'refs/heads/main' }}
