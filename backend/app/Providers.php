@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Providers;
+namespace App;
 
 use App\Core\Container;
 use App\Core\Migrator;
