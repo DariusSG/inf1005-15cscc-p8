@@ -30,10 +30,7 @@ export function formatStars(value) {
   return "★".repeat(Number(value || 0));
 }
 
-/**
- * Returns true only for @sit.singaporetech.edu.sg addresses.
- * Mirrors the backend VerificationService::SIT_DOMAIN check.
- */
+//PLACEHOLDERRRRRRR
 export function isSitEmail(email) {
   return /@sit\.singaporetech\.edu\.sg$/i.test(String(email || "").trim());
 }
