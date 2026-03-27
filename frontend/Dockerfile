@@ -2,15 +2,17 @@
 
 FROM nginx:alpine
 
-# Remove default config
+# Remove default config first (rarely changes)
 RUN rm /etc/nginx/conf.d/default.conf
 
-# Add config
+# Copy Nginx config (changes infrequently)
 COPY frontend/docker/nginx.conf /etc/nginx/conf.d/default.conf
 
-# Copy static files
-COPY frontend/index.html /usr/share/nginx/html
-COPY frontend/src /usr/share/nginx/html/src
+# Copy static HTML files (changes less frequently than src)
+COPY frontend/index.html /usr/share/nginx/html/
+
+# Copy frontend source (most frequently changing)
+COPY frontend/src /usr/share/nginx/html/src/
 
 EXPOSE 80
 

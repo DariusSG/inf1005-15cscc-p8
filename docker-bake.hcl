@@ -51,6 +51,6 @@ target "frontend" {
     "type=registry,ref=${IMAGE_PREFIX}/frontend:latest"
   ]
   cache-to = [
-    "type=inline"
+    "type=registry,ref=${IMAGE_PREFIX}/frontend:cache,mode=max"
   ]
 }
