@@ -4,85 +4,66 @@ namespace App\Core;
 
 use App\Repositories\UserRepository;
 use Illuminate\Database\Capsule\Manager as Capsule;
+use Throwable;
 
-/**
- * Handles database migrations and the Nextcloud-style installed flag.
- *
- * Used by:
- *   - AppServiceProvider::register()  — automatic on every HTTP boot
- *   - MigrateCommand                  — manual via ./occ app:migrate
- */
 class Migrator
 {
-    private const MIGRATIONS_DIR = __DIR__ . '/../../database/migrations';
+    private const string MIGRATIONS_DIR = __DIR__ . '/../../database/migrations';
 
-    // ── Public API ────────────────────────────────────────────────────────
-
-    /**
-     * Run all pending migrations.
-     *
-     * On first boot (app.installed === false):
-     *   1. Creates the migrations tracking table.
-     *   2. Runs every pending migration file.
-     *   3. Seeds the default admin user.
-     *   4. Writes 'installed = true' back into config/config.php.
-     *
-     * On subsequent boots the tracking table already exists and every
-     * migration is already recorded, so the loop is a no-op.
-     *
-     * @param  callable|null $logger  fn(string $message) — receives progress lines
-     * @return array{ran: string[], skipped: string[], errors: string[]}
-     */
     public static function run(?callable $logger = null): array
     {
         $log = $logger ?? fn($msg) => null;
+        $isFirstBoot = !Helpers::config('app.installed', false);
 
-        $firstBoot = !Helpers::config('app.installed', false);
+        // Ensure tracking table exists
+        self::ensureMigrationsTable($log);
 
-        // Ensure the migrations tracking table exists
-        if (!Capsule::schema()->hasTable('migrations')) {
-            Capsule::schema()->create('migrations', function ($table) {
-                $table->increments('id');
-                $table->string('migration')->unique();
-                $table->timestamp('created_at')->useCurrent();
-            });
-            $log('Created migrations table.');
-        }
-
-        $ran     = [];
+        $ran = [];
         $skipped = [];
-        $errors  = [];
+        $errors = [];
 
-        foreach (glob(self::MIGRATIONS_DIR . '/*.php') as $file) {
+        // Get and sort migration files (ensures 001 runs before 002)
+        $files = glob(self::MIGRATIONS_DIR . '/*.php');
+        if ($files === false) {
+            return ['ran' => [], 'skipped' => [], 'errors' => ['Could not read migrations directory']];
+        }
+        sort($files);
+
+        foreach ($files as $file) {
             require_once $file;
+            $className = 'Migration_' . basename($file, '.php');
 
-            $class = 'Migration_' . basename($file, '.php');
-
-            if (!class_exists($class)) {
-                $errors[] = "Invalid migration class: {$class}";
-                $log("ERROR: Invalid migration class: {$class}");
+            if (!class_exists($className)) {
+                $errors[] = "Class $className missing in $file";
                 continue;
             }
 
-            if (Capsule::table('migrations')->where('migration', $class)->exists()) {
-                $skipped[] = $class;
-                $log("Skipping (already run): {$class}");
+            // Check if already run
+            if (Capsule::table('migrations')->where('migration', $className)->exists()) {
+                $skipped[] = $className;
                 continue;
             }
 
             try {
-                (new $class())->up();
-                Capsule::table('migrations')->insert(['migration' => $class]);
-                $ran[] = $class;
-                $log("Ran: {$class}");
-            } catch (\Throwable $e) {
-                $errors[] = "{$class}: " . $e->getMessage();
-                $log("ERROR {$class}: " . $e->getMessage());
+                // Wrap in transaction: ensures the 'up' logic and migration log stay in sync
+                Capsule::connection()->transaction(function () use ($className, &$ran) {
+                    new $className()->up();
+                    Capsule::table('migrations')->insert([
+                        'migration' => $className,
+                        'created_at' => date('Y-m-d H:i:s')
+                    ]);
+                    $ran[] = $className;
+                });
+                $log("Ran: $className");
+            } catch (Throwable $e) {
+                $errors[] = "$className: " . $e->getMessage();
+                $log("ERROR $className: " . $e->getMessage());
+                break; // Stop execution on failure to prevent dependency issues
             }
         }
 
-        // First-boot: seed admin + mark as installed
-        if ($firstBoot) {
+        // Finalize First Boot
+        if ($isFirstBoot && empty($errors)) {
             self::seedAdmin($log);
             Helpers::writeConfig('app', 'installed', true);
             $log('Application marked as installed.');
@@ -91,48 +72,41 @@ class Migrator
         return compact('ran', 'skipped', 'errors');
     }
 
-    /**
-     * Returns true if the migrations tracking table exists.
-     */
-    public static function hasMigrationsTable(): bool
+    private static function ensureMigrationsTable(callable $log): void
     {
-        try {
-            return Capsule::schema()->hasTable('migrations');
-        } catch (\Throwable) {
-            return false;
+        if (!Capsule::schema()->hasTable('migrations')) {
+            Capsule::schema()->create('migrations', function ($table) {
+                $table->increments('id');
+                $table->string('migration', 191)->unique();
+                $table->timestamp('created_at')->nullable();
+            });
+            $log('Created migrations table.');
         }
     }
 
-    /**
-     * Returns the list of already-applied migration names.
-     */
     public static function appliedMigrations(): array
     {
-        if (!self::hasMigrationsTable()) {
-            return [];
-        }
-        return Capsule::table('migrations')->pluck('migration')->toArray();
+        return Capsule::schema()->hasTable('migrations')
+            ? Capsule::table('migrations')->pluck('migration')->toArray()
+            : [];
     }
 
-    // ── Private helpers ───────────────────────────────────────────────────
-
-    /**
-     * Seed the default admin user.
-     * Credentials come from ADMIN_EMAIL / ADMIN_PASS env vars only —
-     * these secrets must never be stored in config/config.php.
-     */
     private static function seedAdmin(callable $log): void
     {
-        $email    = $_ENV['ADMIN_EMAIL'] ?? 'admin@example.com';
-        $password = $_ENV['ADMIN_PASS']  ?? 'changeme';
+        $email = $_ENV['ADMIN_EMAIL'] ?? 'admin@example.com';
+        $pass  = $_ENV['ADMIN_PASS']  ?? 'changeme';
 
         if (UserRepository::findByEmail($email)) {
-            $log("Admin user already exists: {$email}");
+            $log("Admin already exists: $email");
             return;
         }
 
-        $hashed = password_hash($password, PASSWORD_ARGON2ID);
-        UserRepository::create($email, $hashed, 'admin', 'Admin');
-        $log("Default admin created: {$email}");
+        UserRepository::create(
+            $email,
+            password_hash($pass, PASSWORD_ARGON2ID),
+            'admin',
+            'Admin'
+        );
+        $log("Default admin created: $email");
     }
 }

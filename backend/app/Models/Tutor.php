@@ -5,6 +5,9 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Model;
 
+/**
+ * @method static create(array $data)
+ */
 class Tutor extends Model
 {
     protected $table = 'tutors';

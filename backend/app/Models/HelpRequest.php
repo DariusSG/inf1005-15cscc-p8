@@ -2,8 +2,15 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Model;
+
+/**
+ * @method static create(array|bool[]|string[] $array_merge)
+ * @method static findOrFail(int $id)
+ */
 
 class HelpRequest extends Model
 {
@@ -28,17 +35,17 @@ class HelpRequest extends Model
         'bounty_amount' => 'float',
     ];
 
-    public function author()
+    public function author(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id');
     }
 
-    public function module()
+    public function module(): BelongsTo
     {
         return $this->belongsTo(Module::class, 'module_code', 'code');
     }
 
-    public function responses()
+    public function responses(): HasMany
     {
         return $this->hasMany(HelpResponse::class);
     }

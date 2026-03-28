@@ -2,6 +2,7 @@
 
 namespace App\Core;
 
+
 class Helpers
 {
     private static ?array $cfg = null;
@@ -11,68 +12,69 @@ class Helpers
         return __DIR__ . '/../../config/config.php';
     }
 
-    /**
-     * Get config by dot-notation key, e.g. "database.host" or "app.installed".
-     */
-    public static function config(string $key, $default = null): mixed
+    public static function config(string $key, mixed $default = null): mixed
     {
-        if (self::$cfg === null) {
-            self::$cfg = require self::configPath();
-        }
-
+        $config = self::loadConfig();
         $parts = explode('.', $key);
-        $value = self::$cfg;
 
         foreach ($parts as $part) {
-            if (!is_array($value) || !array_key_exists($part, $value)) {
+            if (!is_array($config) || !isset($config[$part])) {
                 return $default;
             }
-            $value = $value[$part];
+            $config = $config[$part];
         }
 
-        return $value;
+        return $config;
     }
 
-    /**
-     * Persist a top-level config key back to config/config.php and refresh
-     * the in-memory cache.  Only scalar/bool values are supported.
-     *
-     * Used by AppServiceProvider to write 'app.installed = true' after the
-     * first successful migration run (Nextcloud-style installed flag).
-     */
-    public static function setConfig(string $topKey, mixed $value): void
+    public static function writeConfig(string $key, mixed $value): void
     {
-        if (self::$cfg === null) {
-            self::$cfg = require self::configPath();
+        $config = self::loadConfig();
+        $parts = explode('.', $key);
+        $temp = &$config;
+
+        // Navigate/build the nested array structure
+        foreach ($parts as $part) {
+            if (!isset($temp[$part]) || !is_array($temp[$part])) {
+                $temp[$part] = [];
+            }
+            $temp = &$temp[$part];
         }
 
-        self::$cfg[$topKey] = array_merge(
-            self::$cfg[$topKey] ?? [],
-            is_array($value) ? $value : []
-        );
+        $temp = $value;
+        self::$cfg = $config;
 
-        if (!is_array($value)) {
-            self::$cfg[$topKey] = $value;
-        }
+        // Persist to disk
+        self::persist($config);
     }
 
-    /**
-     * Write a single key inside a top-level section, e.g. ('app', 'installed', true).
-     * Rewrites config/config.php so the flag survives the next request.
-     */
-    public static function writeConfig(string $section, string $key, mixed $value): void
+    private static function loadConfig(): array
     {
         if (self::$cfg === null) {
-            self::$cfg = require self::configPath();
+            $path = self::configPath();
+            self::$cfg = file_exists($path) ? require $path : [];
         }
+        return self::$cfg;
+    }
 
-        // Update in-memory cache
-        self::$cfg[$section][$key] = $value;
+    private static function persist(array $data): void
+    {
+        $path = self::configPath();
 
-        // Rewrite the file
-        $export = var_export(self::$cfg, true);
-        $content = "<?php\n\nreturn " . $export . ";\n";
-        file_put_contents(self::configPath(), $content, LOCK_EX);
+        // Use short array syntax [] instead of array() in the export
+        $export = var_export($data, true)
+                |> (fn($x) => preg_replace("/array \(|array\(/", "[", $x))
+                |> (fn($x) => preg_replace("/\)/", "]", $x));
+
+        $content = "<?php\n\n/**\n * Auto-generated Config File\n */\nreturn " . $export . ";\n";
+
+        // Write with exclusive lock to prevent corruption during concurrent requests
+        file_put_contents($path, $content, LOCK_EX);
+
+        // If using OpCache, invalidate the file so PHP picks up changes immediately
+        if (function_exists('opcache_invalidate')) {
+            @opcache_invalidate($path, true);
+        }
     }
 }
 

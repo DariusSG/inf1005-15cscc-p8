@@ -2,20 +2,17 @@
 
 namespace App\Core;
 
-use App\Core\Request;
-use App\Core\Response;
-use App\Core\Container;
+use App\Middleware\Middleware;
+use Exception;
+use RuntimeException;
 
 class Router
 {
-    private $routes = [];
-    private $prefix = '';
-    private $globalMiddleware = [];
+    private array $routes = [];
+    private string $prefix = '';
+    private array $globalMiddleware = [];
 
-    // -----------------------------
-    // Route group prefix
-    // -----------------------------
-    public function prefix(string $prefix, callable $callback)
+    public function prefix(string $prefix, callable $callback): void
     {
         $previousPrefix = $this->prefix;
         $this->prefix .= $prefix;
@@ -23,10 +20,7 @@ class Router
         $this->prefix = $previousPrefix;
     }
 
-    // -----------------------------
-    // Route group middleware
-    // -----------------------------
-    public function middleware(array $middleware, callable $callback)
+    public function middleware(array $middleware, callable $callback): void
     {
         $previous = $this->globalMiddleware;
         $this->globalMiddleware = array_merge($this->globalMiddleware, $middleware);
@@ -34,90 +28,99 @@ class Router
         $this->globalMiddleware = $previous;
     }
 
-    public function get(string $path, string $handler, array $middleware = [])
+    public function get(string $path, string $handler, array $middleware = []): void
     {
         $this->addRoute('GET', $path, $handler, $middleware);
     }
 
-    public function post(string $path, string $handler, array $middleware = [])
+    public function put(string $path, string $handler, array $middleware = []): void
+    {
+        $this->addRoute('PUT', $path, $handler, $middleware);
+    }
+
+    public function post(string $path, string $handler, array $middleware = []): void
     {
         $this->addRoute('POST', $path, $handler, $middleware);
     }
 
-    // -----------------------------
-    // Add route with middleware
-    // -----------------------------
-    private function addRoute(string $method, string $path, string $handler, array $middleware = [])
+    public function delete(string $path, string $handler, array $middleware = []): void
+    {
+        $this->addRoute('DELETE', $path, $handler, $middleware);
+    }
+
+    private function addRoute(string $method, string $path, string $handler, array $middleware = []): void
     {
         $path = $this->prefix . $path;
+
+        preg_match_all('#\{([a-zA-Z_][a-zA-Z0-9_]*)}#', $path, $matches);
+        $regex = "#^" . preg_replace('#\{[a-zA-Z_][a-zA-Z0-9_]*}#', '([^/]+)', $path) . "$#";
+
         $this->routes[$method][$path] = [
-            'handler' => $handler,
-            'middleware' => array_merge($this->globalMiddleware, $middleware)
+            'handler'    => $handler,
+            'middleware' => array_merge($this->globalMiddleware, $middleware),
+            'pattern'    => $regex,
+            'params'     => $matches[1] // Parameter names
         ];
     }
 
-    // -----------------------------
-    // Resolve current request
-    // -----------------------------
-    public function resolve()
+    /**
+     * @throws Exception
+     */
+    public function resolve(): void
     {
         $method = Request::method();
-        $uri = Request::uri();
+        $uri    = Request::uri();
 
-        foreach ($this->routes[$method] ?? [] as $route => $data) {
-
-            // Capture parameter names: {id}, {user_id}, {slug123}, etc.
-            preg_match_all('#\{([a-zA-Z_][a-zA-Z0-9_]*)\}#', $route, $paramNames);
-            $paramNames = $paramNames[1]; // array of parameter names
-
-            // Convert route to regex pattern
-            $pattern = "#^" . preg_replace('#\{[a-zA-Z_][a-zA-Z0-9_]*\}#', '([^/]+)', $route) . "$#";
-
-            if (preg_match($pattern, $uri, $matches)) {
-                array_shift($matches); // remove full match
+        foreach ($this->routes[$method] ?? [] as $routeData) {
+            if (preg_match($routeData['pattern'], $uri, $matches)) {
+                array_shift($matches); // Remove full match
 
                 // Map matches to parameter names
-                $params = [];
-                foreach ($paramNames as $i => $name) {
-                    $params[$name] = $matches[$i] ?? null;
-                }
+                $params = array_combine($routeData['params'], $matches);
 
-                // -----------------------------
-                // Run middleware
-                // -----------------------------
-                foreach ($data['middleware'] as $mw) {
-                    // Parse middleware with optional parameters (e.g., "JwtMiddleware:admin")
-                    $parts = explode(':', $mw, 2);
-                    $class = "App\\Middleware\\" . $parts[0];
-                    $args = isset($parts[1]) ? explode(',', $parts[1]) : [];
+                // Execute Middleware Stack
+                $this->runMiddleware($routeData['middleware']);
 
-                    if (class_exists($class)) {
-                        try {
-                            // Try DI container first
-                            $instance = Container::resolve($parts[0]);
-                            if (method_exists($instance, 'handle')) {
-                                $instance->handle(...$args);
-                            } else {
-                                $class::handle(...$args); // fallback to static
-                            }
-                        } catch (\Exception $e) {
-                            // Fallback to static if container resolution fails
-                            $class::handle(...$args);
-                        }
-                    }
-                }
-
-                // -----------------------------
-                // Call controller method
-                // -----------------------------
-                [$controller, $methodName] = explode('@', $data['handler']);
-                $controller = "App\\Controllers\\" . $controller;
-
-                return (new $controller)->$methodName(...array_values($params));
+                // Execute Controller
+                $this->dispatch($routeData['handler'], $params);
+                return;
             }
         }
 
-        // No matching route
         Response::json(["error" => "Route not found"], 404);
+    }
+
+    private function runMiddleware(array $middlewares): void
+    {
+        foreach ($middlewares as $mw) {
+            $parts = explode(':', $mw, 2);
+            $fullClass = "App\\Middleware\\" . $parts[0];
+            $args = isset($parts[1]) ? explode(',', $parts[1]) : [];
+
+            if (!class_exists($fullClass) || !is_subclass_of($fullClass, Middleware::class)) {
+                throw new RuntimeException("Middleware [$fullClass] is invalid.");
+            }
+
+            // Interface guarantees this static method exists
+            $fullClass::handle(...$args);
+        }
+    }
+
+    /**
+     * @throws Exception
+     */
+    private function dispatch(string $handler, array $params): void
+    {
+        [$class, $method] = explode('@', $handler);
+        $controllerName = "App\\Controllers\\" . $class;
+
+        $controller = Container::resolve($controllerName);
+
+        if (!method_exists($controller, $method)) {
+            throw new RuntimeException("Method [$method] not found in [$controllerName].");
+        }
+
+        // Call the method with URI parameters
+        $controller->$method(...array_values($params));
     }
 }

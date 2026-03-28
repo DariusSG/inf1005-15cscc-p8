@@ -18,8 +18,8 @@ try {
 }
 
 $installed        = Helpers::config('app.installed', false);
-$hasMigrTable     = $dbConnected && Migrator::hasMigrationsTable();
-$appliedMigrations = $hasMigrTable ? Migrator::appliedMigrations() : [];
+$hasMigrationTable     = $dbConnected && Migrator::hasMigrationsTable();
+$appliedMigrations = $hasMigrationTable ? Migrator::appliedMigrations() : [];
 
 $status = [
     'app'       => 'SITizen API',
@@ -28,7 +28,7 @@ $status = [
     'database'  => [
         'connected'          => $dbConnected,
         'error'              => $dbError,
-        'migrations_table'   => $hasMigrTable,
+        'migrations_table'   => $hasMigrationTable,
         'applied_migrations' => $appliedMigrations,
     ],
 ];

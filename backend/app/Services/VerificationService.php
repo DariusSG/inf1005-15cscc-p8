@@ -5,38 +5,35 @@ namespace App\Services;
 use App\Models\EmailVerification;
 use App\Config\Mail;
 use Carbon\Carbon;
+use InvalidArgumentException;
+use Random\RandomException;
+use RuntimeException;
 
 class VerificationService
 {
-    private const SIT_DOMAIN = '@sit.singaporetech.edu.sg';
+    private const string SIT_DOMAIN = '@sit.singaporetech.edu.sg';
 
-    private MailService $mailer;
-
-    public function __construct(MailService $mailer)
-    {
-        $this->mailer = $mailer;
-    }
-
-    // ── Domain guard ────────────────────────────────────────────────────
+    public function __construct(
+        private readonly MailService $mailer
+    ) {}
 
     public function assertSitEmail(string $email): void
     {
         if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            throw new \InvalidArgumentException('Invalid email address.');
+            throw new InvalidArgumentException('Invalid email address.');
         }
 
         if (!str_ends_with(strtolower($email), self::SIT_DOMAIN)) {
-            throw new \InvalidArgumentException(
+            throw new InvalidArgumentException(
                 'Only SIT student emails ending in ' . self::SIT_DOMAIN . ' are accepted.'
             );
         }
     }
 
-    // ── Send invite ─────────────────────────────────────────────────────
-
     /**
      * Invalidate any existing unused tokens for this email,
      * create a new one, and send the invite.
+     * @throws RandomException
      */
     public function sendInvite(string $email): void
     {
@@ -61,8 +58,6 @@ class VerificationService
         $this->mailer->sendVerificationEmail($email, $rawToken);
     }
 
-    // ── Verify token ────────────────────────────────────────────────────
-
     /**
      * Look up a raw token. Returns the verified email on success.
      * Throws on invalid / expired / already-used token.
@@ -76,17 +71,15 @@ class VerificationService
             ->first();
 
         if (!$record) {
-            throw new \RuntimeException('Invalid or already-used verification link.');
+            throw new RuntimeException('Invalid or already-used verification link.');
         }
 
         if (Carbon::now()->gt($record->expires_at)) {
-            throw new \RuntimeException('This verification link has expired. Please request a new one.');
+            throw new RuntimeException('This verification link has expired. Please request a new one.');
         }
 
         return $record->email;
     }
-
-    // ── Consume token ───────────────────────────────────────────────────
 
     /** Mark the token as used (call after account is successfully created). */
     public function consumeToken(string $rawToken): void

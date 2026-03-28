@@ -5,9 +5,56 @@ namespace App\Repositories;
 use Illuminate\Database\Capsule\Manager as Capsule;
 use App\Models\HelpRequest;
 use App\Models\HelpResponse;
+use Throwable;
 
-class HelpRequestRepository
+use OpenApi\Attributes as OA;
+
+#[OA\Schema(
+    schema: "HelpRequest",
+    type: "object",
+    properties: [
+        new OA\Property(property: "id", type: "integer"),
+        new OA\Property(property: "userEmail", type: "string"),
+        new OA\Property(property: "title", type: "string"),
+        new OA\Property(property: "module", type: "string"),
+        new OA\Property(property: "desc", type: "string"),
+        new OA\Property(property: "urgency", type: "string", enum: ["low", "medium", "high"]),
+        new OA\Property(property: "contactEmail", type: "string", format: "email"),
+        new OA\Property(property: "hasBounty", type: "boolean"),
+        new OA\Property(property: "bountyAmount", type: "number"),
+        new OA\Property(property: "status", type: "string"),
+        new OA\Property(property: "created_at", type: "string", format: "date-time")
+    ]
+)]
+#[OA\Schema(
+    schema: "HelpRequestResponse",
+    type: "object",
+    properties: [
+        new OA\Property(property: "id", type: "integer"),
+        new OA\Property(property: "help_request_id", type: "integer"),
+        new OA\Property(property: "user_id", type: "integer"),
+        new OA\Property(property: "content", type: "string"),
+        new OA\Property(property: "created_at", type: "string", format: "date-time"),
+        new OA\Property(
+            property: "author",
+            type: "object",
+            properties: [
+                new OA\Property(property: "id", type: "integer"),
+                new OA\Property(property: "email", type: "string")
+            ]
+        )
+    ]
+)]
+class HelpRequestRepository extends BaseRepository
 {
+    /**
+     * Search HelpRequest with Pagination
+     *
+     * @param array $filters
+     * @param int $perPage
+     * @param int $page
+     * @return array
+     */
     public static function paginate(array $filters = [], int $perPage = 20, int $page = 1): array
     {
         $search = $filters['search'] ?? null;
@@ -15,55 +62,73 @@ class HelpRequestRepository
         $query = HelpRequest::with(['author:id,email', 'responses.author:id,email']);
 
         if ($search) {
-            $escaped = BaseRepository::escapeSearch($search);
+            $escaped = self::escapeSearch($search);
             $query->where(function ($q) use ($escaped) {
                 $q->whereRaw('title LIKE ?', [$escaped])
                   ->orWhereRaw('module_code LIKE ?', [$escaped]);
             });
         }
 
-        $total    = $query->count();
-        $requests = $query
-            ->orderBy('created_at', 'desc')
-            ->offset(($page - 1) * $perPage)
-            ->limit($perPage)
-            ->get()
+        $paginator = $query
+            ->latest()
+            ->paginate($perPage, ['*'], 'page', $page);
+
+        $requests = collect($paginator->items())
             ->map(fn($r) => self::format($r))
             ->all();
 
         return [
             'data' => $requests,
-            'meta' => BaseRepository::buildPaginationMeta($total, $perPage, $page),
+            'meta' => self::buildPaginationMeta(
+                $paginator->total(),
+                $perPage,
+                $page
+            ),
         ];
     }
 
+    /**
+     * Generic Search for HelpRequest
+     *
+     * @param string|null $search
+     * @return array
+     */
     public static function all(?string $search = null): array
     {
         $q = HelpRequest::with(['author:id,email', 'responses.author:id,email']);
 
         if ($search) {
             $q->where(function ($q) use ($search) {
-                $escaped = '%' . addcslashes($search, '%_') . '%';
+                $escaped = self::escapeSearch($search);
                 $q->whereRaw('title LIKE ?', [$escaped])
                     ->orWhereRaw('module_code LIKE ?', [$escaped]);
             });
         }
 
+        /** @var HelpRequest $r */
         return $q->latest()->get()
             ->map(fn($r) => self::format($r))
             ->all();
     }
 
+    /**
+     * Find HelpRequest given id
+     *
+     * @param int $id
+     * @return HelpRequest|null
+     */
     public static function find(int $id): ?HelpRequest
     {
         return HelpRequest::with(['author:id,email', 'responses.author:id,email'])->find($id);
     }
 
+
     /**
-     * Create a help request.
+     * Create new HelpRequest
      *
-     * Expected keys: user_id, title, module_code?, description?,
-     *                urgency?, contact_email?, has_bounty?, bounty_amount?
+     * @param array $data
+     * @return HelpRequest
+     * @throws Throwable
      */
     public static function create(array $data): HelpRequest
     {
@@ -78,6 +143,14 @@ class HelpRequestRepository
         });
     }
 
+    /**
+     * Add Response to HelpRequest
+     *
+     * @param int $helpRequestId
+     * @param int $userId
+     * @param string $content
+     * @return HelpResponse
+     */
     public static function addResponse(int $helpRequestId, int $userId, string $content): HelpResponse
     {
         return HelpResponse::create([
@@ -87,6 +160,12 @@ class HelpRequestRepository
         ]);
     }
 
+    /**
+     * Mark HelpRequest as solved
+     *
+     * @param int $id
+     * @return HelpRequest
+     */
     public static function markSolved(int $id): HelpRequest
     {
         $req = HelpRequest::findOrFail($id);
@@ -94,6 +173,12 @@ class HelpRequestRepository
         return $req->fresh(['author:id,email', 'responses.author:id,email']);
     }
 
+    /**
+     * Array formatting for JSON
+     *
+     * @param HelpRequest $req
+     * @return array
+     */
     public static function format(HelpRequest $req): array
     {
         return [

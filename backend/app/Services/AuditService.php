@@ -7,15 +7,15 @@ use App\Core\Request;
 
 class AuditService
 {
-    public const EVENT_LOGIN_SUCCESS = 'auth.login.success';
-    public const EVENT_LOGIN_FAILED = 'auth.login.failed';
-    public const EVENT_LOGOUT = 'auth.logout';
-    public const EVENT_REFRESH_TOKEN = 'auth.refresh';
-    public const EVENT_REVIEW_CREATE = 'review.create';
-    public const EVENT_REVIEW_UPDATE = 'review.update';
-    public const EVENT_REVIEW_VOTE = 'review.vote';
-    public const EVENT_REVIEW_REPORT = 'review.report';
-    public const EVENT_ADMIN_ACTION = 'admin.action';
+    public const string EVENT_LOGIN_SUCCESS = 'auth.login.success';
+    public const string EVENT_LOGIN_FAILED = 'auth.login.failed';
+    public const string EVENT_LOGOUT = 'auth.logout';
+    public const string EVENT_REFRESH_TOKEN = 'auth.refresh';
+    public const string EVENT_REVIEW_CREATE = 'review.create';
+    public const string EVENT_REVIEW_UPDATE = 'review.update';
+    public const string EVENT_REVIEW_VOTE = 'review.vote';
+    public const string EVENT_REVIEW_REPORT = 'review.report';
+    public const string EVENT_ADMIN_ACTION = 'admin.action';
 
     public static function log(string $event, array $data = []): void
     {
@@ -28,7 +28,7 @@ class AuditService
             'data' => $data,
         ];
 
-        Logger::channel()->info("AUDIT: {$event}", $entry);
+        Logger::channel()->info("AUDIT: $event", $entry);
     }
 
     private static function maskEmail(string $email): string

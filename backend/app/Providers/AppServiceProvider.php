@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Core\Container;
 use App\Core\Migrator;
+use App\Core\Helpers;
 use App\Config\Database;
 use App\Services\AuthService;
 use App\Services\TokenService;
@@ -17,16 +18,14 @@ class AppServiceProvider
     {
         Database::init();
 
-        // Always run pending migrations on every HTTP boot.
-        // Safe: the migrations tracking table prevents re-running applied files.
-        // On first boot, also seeds the admin user and writes installed=true
-        // into config/config.php (Nextcloud-style installed flag).
-        Migrator::run();
+        if (!Helpers::config('app.installed', false)) {
+            Migrator::run();
+        }
 
-        Container::bind('TokenService',        fn() => new TokenService(),                                        true);
-        Container::bind('MailService',         fn() => new MailService(),                                         true);
-        Container::bind('VerificationService', fn() => new VerificationService(Container::resolve('MailService')), true);
-        Container::bind('AuthService',         fn() => new AuthService(),                                         true);
-        Container::bind('UserService',         fn() => new UserService(),                                         true);
+        Container::singleton(TokenService::class, TokenService::class);
+        Container::singleton(MailService::class, MailService::class);
+        Container::singleton(AuthService::class, AuthService::class);
+        Container::singleton(UserService::class, UserService::class);
+        Container::singleton(VerificationService::class, VerificationService::class);
     }
 }

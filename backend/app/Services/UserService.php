@@ -2,35 +2,43 @@
 
 namespace App\Services;
 
+use App\Models\User;
 use App\Repositories\UserRepository;
+use Exception;
+use InvalidArgumentException;
 
 class UserService
 {
-    public function createUser(string $email, string $password)
+    /**
+     * @throws InvalidArgumentException
+     */
+    public function createUser(string $name, string $email, string $hashed, string $role = "student"): User
     {
         if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            throw new \Exception("Invalid email");
+            throw new InvalidArgumentException("Invalid email");
         }
 
         if (UserRepository::findByEmail($email)) {
-            throw new \Exception("User already exists");
+            throw new InvalidArgumentException('An account for this email already exists.');
         }
 
-        return UserRepository::create($email, $password);
+        if (strlen(trim($name)) < 2) {
+            throw new InvalidArgumentException('Name must be at least 2 characters.');
+        }
+
+        return UserRepository::create($email, $hashed, $role, trim($name));
     }
 
-    public function getUserById(int $id)
+    /**
+     * @throws InvalidArgumentException
+     */
+    public function getUserById(int $id): User
     {
         $user = UserRepository::findById($id);
         if (!$user) {
-            throw new \Exception("User not found");
+            throw new InvalidArgumentException("User not found");
         }
 
         return $user;
-    }
-
-    public function getAllUsers()
-    {
-        return UserRepository::all();
     }
 }

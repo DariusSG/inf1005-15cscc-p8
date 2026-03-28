@@ -2,19 +2,20 @@
 
 namespace App\Repositories;
 
-use Illuminate\Database\Eloquent\Model;
-
+/**
+ * @internal
+ */
 abstract class BaseRepository
 {
-    protected Model $model;
-
-    abstract protected function getModel(): Model;
-
     /**
-     * Build a standardised pagination meta array.
-     * Used by all static repository paginate() methods to avoid duplication.
+     * Build a standardized pagination meta array.
+     *
+     * @param int $total
+     * @param int $perPage
+     * @param int $page
+     * @return array{total: int, per_page: int, current_page: int, last_page: int}
      */
-    public static function buildPaginationMeta(int $total, int $perPage, int $page): array
+    public function buildPaginationMeta(int $total, int $perPage, int $page): array
     {
         return [
             'total'        => $total,
@@ -25,9 +26,12 @@ abstract class BaseRepository
     }
 
     /**
-     * Escape a LIKE search term (wildcards only, no SQL injection).
+     * Escape a LIKE search term for safe SQL usage.
+     *
+     * @param string $search Raw search string.
+     * @return string Escaped string wrapped in wildcards.
      */
-    public static function escapeSearch(string $search): string
+    public function escapeSearch(string $search): string
     {
         return '%' . addcslashes($search, '%_') . '%';
     }

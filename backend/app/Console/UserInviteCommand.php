@@ -11,7 +11,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
-#[AsCommand(name: 'app:user:invite', description: 'Generate an invite token for a new user')]
+#[AsCommand(name: 'user:invite', description: 'Generate an invite token for a new user')]
 class UserInviteCommand extends Command
 {
     protected static $defaultName = 'app:user:invite';

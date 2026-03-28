@@ -3,13 +3,14 @@
 namespace App\Console;
 
 use App\Config\Database;
+use App\Core\Helpers;
 use App\Core\Migrator;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-#[AsCommand(name: 'app:migrate', description: 'Run pending database migrations')]
+#[AsCommand(name: 'migration:run', description: 'Run pending database migrations')]
 class MigrateCommand extends Command
 {
     protected function configure(): void
@@ -29,11 +30,14 @@ class MigrateCommand extends Command
 
         $output->writeln('Running migrations…');
 
-        $result = Migrator::run(function (string $msg) use ($output) {
-            $output->writeln('  ' . $msg);
-        });
+        $result = Migrator::run(fn($msg) => $output->writeln('  ' . $msg));
 
         if (!empty($result['ran'])) {
+            // If we just ran migrations for the first time, mark as installed
+            if (!Helpers::config('app.installed')) {
+                Helpers::writeConfig('app.installed', true);
+                $output->writeln('<info>Application marked as installed.</info>');
+            }
             $output->writeln('<info>Applied ' . count($result['ran']) . ' migration(s).</info>');
         } else {
             $output->writeln('<info>No pending migrations.</info>');

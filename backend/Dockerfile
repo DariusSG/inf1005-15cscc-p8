@@ -1,6 +1,6 @@
 # backend/Dockerfile
 
-FROM php:8.4-fpm-alpine
+FROM php:8.5-fpm-alpine
 
 # ── System dependencies ───────────────────────────────────────────────────────
 RUN apk add --no-cache \
@@ -8,12 +8,17 @@ RUN apk add --no-cache \
     libzip-dev \
     icu-dev \
     oniguruma-dev \
+    libxml2-dev \
+    linux-headers \
     bash \
     shadow \
     git \
     unzip \
     mailcap \
-    curl
+    curl \
+    g++ \
+    make \
+    autoconf
 
 # ── PHP extensions ────────────────────────────────────────────────────────────
 RUN docker-php-ext-install \
@@ -21,8 +26,7 @@ RUN docker-php-ext-install \
     pdo_mysql \
     mbstring \
     intl \
-    zip \
-    opcache
+    zip
 
 # ── Install Composer (FROM official image) ────────────────────────────────────
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer

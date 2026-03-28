@@ -5,6 +5,9 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Model;
 
+/**
+ * @method static create(array $data)
+ */
 class StudyGroup extends Model
 {
     protected $table = 'study_groups';

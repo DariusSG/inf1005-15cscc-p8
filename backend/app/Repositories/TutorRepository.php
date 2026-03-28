@@ -3,8 +3,23 @@
 namespace App\Repositories;
 
 use App\Models\Tutor;
+use OpenApi\Attributes as OA;
 
-class TutorRepository
+#[OA\Schema(
+    schema: "Tutor",
+    type: "object",
+    properties: [
+        new OA\Property(property: "id", type: "integer"),
+        new OA\Property(property: "user_email", type: "string", nullable: true),
+        new OA\Property(property: "name", type: "string"),
+        new OA\Property(property: "modules", type: "array", items: new OA\Items(type: "string")),
+        new OA\Property(property: "rate", type: "number", format: "float"),
+        new OA\Property(property: "contact_email", type: "string", format: "email"),
+        new OA\Property(property: "bio", type: "string", nullable: true),
+        new OA\Property(property: "created_at", type: "string", format: "date-time")
+    ]
+)]
+class TutorRepository extends BaseRepository
 {
     public static function paginate(array $filters = [], int $perPage = 20, int $page = 1): array
     {
@@ -13,28 +28,29 @@ class TutorRepository
         $query = Tutor::with(['user:id,email', 'modules:code,name']);
 
         if ($search) {
-            $escaped = BaseRepository::escapeSearch($search);
+            $escaped = self::escapeSearch($search);
             $query->where(function ($q) use ($escaped) {
                 $q->whereRaw('name LIKE ?', [$escaped])
-                  ->orWhereHas('modules', fn($mq) =>
-                      $mq->whereRaw('code LIKE ?', [$escaped])
-                         ->orWhereRaw('name LIKE ?', [$escaped])
-                  );
+                    ->orWhereHas('modules', fn($mq) =>
+                    $mq->whereRaw('code LIKE ?', [$escaped])
+                        ->orWhereRaw('name LIKE ?', [$escaped])
+                    );
             });
         }
 
-        $total  = $query->count();
-        $tutors = $query
-            ->orderBy('created_at', 'desc')
-            ->offset(($page - 1) * $perPage)
-            ->limit($perPage)
-            ->get()
+        $paginator = $query->latest()->paginate($perPage, ['*'], 'page', $page);
+
+        $tutors = collect($paginator->items())
             ->map(fn($t) => self::format($t))
             ->all();
 
         return [
             'data' => $tutors,
-            'meta' => BaseRepository::buildPaginationMeta($total, $perPage, $page),
+            'meta' => self::buildPaginationMeta(
+                $paginator->total(),
+                $perPage,
+                $page
+            ),
         ];
     }
 
@@ -44,7 +60,7 @@ class TutorRepository
 
         if ($search) {
             $q->where(function ($q) use ($search) {
-                $escaped = '%' . addcslashes($search, '%_') . '%';
+                $escaped = self::escapeSearch($search);
                 $q->whereRaw('name LIKE ?', [$escaped])
                   ->orWhereHas('modules', fn($mq) =>
                       $mq->whereRaw('code LIKE ?', [$escaped])
@@ -53,6 +69,7 @@ class TutorRepository
             });
         }
 
+        /** @var Tutor $t */
         return $q->latest()->get()
             ->map(fn($t) => self::format($t))
             ->all();

@@ -3,6 +3,7 @@
 namespace App\Config;
 
 use App\Core\Helpers;
+use Exception;
 
 class JwtConfig
 {
@@ -19,11 +20,14 @@ class JwtConfig
         return Helpers::config('jwt.current_kid') ?: 'v1';
     }
 
+    /**
+     * @throws Exception
+     */
     public static function secret(string $kid): string
     {
         $keys = self::keys();
         if (!isset($keys[$kid])) {
-            throw new \Exception("Invalid key id: $kid");
+            throw new Exception("Invalid key id: $kid");
         }
         return $keys[$kid];
     }

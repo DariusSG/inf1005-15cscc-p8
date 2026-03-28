@@ -3,8 +3,23 @@
 namespace App\Repositories;
 
 use App\Models\StudyGroup;
+use OpenApi\Attributes as OA;
 
-class StudyGroupRepository
+#[OA\Schema(
+    schema: "StudyGroup",
+    type: "object",
+    properties: [
+        new OA\Property(property: "id", type: "integer"),
+        new OA\Property(property: "user_id", type: "integer"),
+        new OA\Property(property: "name", type: "string"),
+        new OA\Property(property: "module_code", type: "string"),
+        new OA\Property(property: "description", type: "string", nullable: true),
+        new OA\Property(property: "meeting_time", type: "string", nullable: true),
+        new OA\Property(property: "location", type: "string", nullable: true),
+        new OA\Property(property: "created_at", type: "string", format: "date-time")
+    ]
+)]
+class StudyGroupRepository extends BaseRepository
 {
     public static function paginate(array $filters = [], int $perPage = 20, int $page = 1): array
     {
@@ -13,24 +28,24 @@ class StudyGroupRepository
         $query = StudyGroup::with('creator:id,email');
 
         if ($search) {
-            $escaped = BaseRepository::escapeSearch($search);
+            $escaped = self::escapeSearch($search);
             $query->where(function ($q) use ($escaped) {
                 $q->whereRaw('name LIKE ?', [$escaped])
-                  ->orWhereRaw('module_code LIKE ?', [$escaped]);
+                    ->orWhereRaw('module_code LIKE ?', [$escaped]);
             });
         }
 
-        $total  = $query->count();
-        $groups = $query
-            ->orderBy('created_at', 'desc')
-            ->offset(($page - 1) * $perPage)
-            ->limit($perPage)
-            ->get()
-            ->toArray();
+        $paginator = $query->latest()->paginate($perPage, ['*'], 'page', $page);
+
+        $groups = collect($paginator->items())->toArray();
 
         return [
             'data' => $groups,
-            'meta' => BaseRepository::buildPaginationMeta($total, $perPage, $page),
+            'meta' => self::buildPaginationMeta(
+                $paginator->total(),
+                $perPage,
+                $page
+            ),
         ];
     }
 
@@ -39,7 +54,7 @@ class StudyGroupRepository
         $q = StudyGroup::with('creator:id,email');
         if ($search) {
             $q->where(function ($q) use ($search) {
-                $escaped = '%' . addcslashes($search, '%_') . '%';
+                $escaped = self::escapeSearch($search);
                 $q->whereRaw('title LIKE ?', [$escaped])
                   ->orWhereRaw('module_code LIKE ?', [$escaped]);
             });

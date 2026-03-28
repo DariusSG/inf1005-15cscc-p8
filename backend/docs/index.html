@@ -20,7 +20,7 @@
 
   <script>
     window.onload = function() {
-      const ui = SwaggerUIBundle({
+      window.ui = SwaggerUIBundle({
         url: window.location.protocol + "//" + window.location.hostname + "/docs/swagger.json",
         dom_id: '#swagger-ui',
         deepLinking: true,
@@ -29,19 +29,8 @@
           SwaggerUIStandalonePreset
         ],
         layout: "StandaloneLayout",
-        validatorUrl: null,
-        requestInterceptor: (req) => {
-          // Add Bearer token automatically if set in localStorage
-          const token = localStorage.getItem('jwt_token');
-          if (token) {
-            req.headers['Authorization'] = 'Bearer ' + token;
-          }
-          return req;
-        }
+        validatorUrl: null
       });
-
-      // Save UI instance globally for debug
-      window.ui = ui;
 
       // Add simple auth token input
       const authContainer = document.createElement('div');
