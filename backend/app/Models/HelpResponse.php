@@ -4,6 +4,9 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
+/**
+ * @method static create(array $array)
+ */
 class HelpResponse extends Model
 {
     protected $table = 'help_responses';

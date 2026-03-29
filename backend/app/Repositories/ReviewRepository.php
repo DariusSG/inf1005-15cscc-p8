@@ -7,8 +7,76 @@ use App\Models\Review;
 use App\Models\ReviewVote;
 use App\Models\ReviewReport;
 use App\Models\ReviewComment;
+use Throwable;
 
-class ReviewRepository
+use OpenApi\Attributes as OA;
+
+#[OA\Schema(
+    schema: 'ReportedReviews',
+    type: 'object',
+    properties: [
+        new OA\Property(
+            property: "data", type: "array",
+            items: new OA\Items(properties: [
+                new OA\Property(property: "id", type: "integer", description: "Review ID"),
+                new OA\Property(property: "module_code", type: "string"),
+                new OA\Property(property: "title", type: "string"),
+                new OA\Property(property: "author", type: "string"),
+                new OA\Property(property: "report_count", type: "integer")
+            ])
+        ),
+        new OA\Property(property: "meta", ref: "#/components/schemas/PaginationMeta")
+    ]
+)]
+#[OA\Schema(
+    schema: "Review",
+    properties: [
+        new OA\Property(property: "id", type: "integer"),
+        new OA\Property(property: "module_code", type: "string"),
+        new OA\Property(property: "author", type: "string", description: "Shortname of author"),
+        new OA\Property(property: "rating", type: "integer", minimum: 1, maximum: 5),
+        new OA\Property(property: "upvotes", type: "integer"),
+        new OA\Property(property: "downvotes", type: "integer"),
+        new OA\Property(
+            property: "comments",
+            type: "array",
+            items: new OA\Items(
+                properties: [
+                    new OA\Property(property: "a", type: "string", description: "Author shortname"),
+                    new OA\Property(property: "t", type: "string", description: "Text content"),
+                    new OA\Property(property: "time", type: "string", format: "date-time")
+                ]
+            )
+        ),
+        new OA\Property(
+            property: "voters",
+            type: "object",
+            additionalProperties: new OA\AdditionalProperties(type: "string", enum: ["up", "down"]),
+            description: "Map of userId => voteType"
+        ),
+        new OA\Property(
+            property: "reportedBy",
+            type: "array",
+            items: new OA\Items(type: "integer")
+        ),
+        new OA\Property(property: "user_vote", type: "string", nullable: true, enum: ["up", "down"]),
+        new OA\Property(property: "reported", type: "boolean")
+    ]
+)]
+#[OA\Schema(
+    schema: "ReviewComment",
+    properties: [
+        new OA\Property(property: "id", type: "integer"),
+        new OA\Property(property: "review_id", type: "integer"),
+        new OA\Property(property: "text", type: "string"),
+        new OA\Property(property: "created_at", type: "string", format: "date-time"),
+        new OA\Property(property: "author", type: "object", properties: [
+            new OA\Property(property: "id", type: "integer"),
+            new OA\Property(property: "email", type: "string")
+        ])
+    ]
+)]
+class ReviewRepository extends BaseRepository
 {
     public static function paginate(array $filters = [], int $perPage = 20, int $page = 1): array
     {
@@ -16,37 +84,44 @@ class ReviewRepository
         $moduleCode = $filters['module_code'] ?? null;
         $search     = $filters['search'] ?? null;
 
-        $query = Review::with(['author:id,email,name', 'comments.author:id,email,name', 'votes', 'reports']);
+        $query = Review::with([
+            'author:id,email,name',
+            'comments.author:id,email,name',
+            'votes',
+            'reports'
+        ]);
 
         if ($moduleCode) {
             $query->where('module_code', $moduleCode);
         }
 
         if ($search) {
-            $escaped = BaseRepository::escapeSearch($search);
+            $escaped = self::escapeSearch($search);
             $query->where(function ($q) use ($escaped) {
                 $q->whereRaw('title LIKE ?', [$escaped])
-                  ->orWhereRaw('content LIKE ?', [$escaped]);
+                    ->orWhereRaw('content LIKE ?', [$escaped]);
             });
         }
 
-        $total   = $query->count();
-        $reviews = $query
-            ->orderBy('created_at', 'desc')
-            ->offset(($page - 1) * $perPage)
-            ->limit($perPage)
-            ->get()
+        $paginator = $query->latest()->paginate($perPage, ['*'], 'page', $page);
+
+        $reviews = collect($paginator->items())
             ->map(fn($r) => self::format($r, $userId))
             ->all();
 
         return [
             'data' => $reviews,
-            'meta' => BaseRepository::buildPaginationMeta($total, $perPage, $page),
+            'meta' => self::buildPaginationMeta(
+                $paginator->total(),
+                $perPage,
+                $page
+            ),
         ];
     }
 
     public static function forModule(string $moduleCode, int $userId): array
     {
+        /** @var Review $r */
         return Review::with(['author:id,email,name', 'comments.author:id,email,name', 'votes', 'reports'])
             ->where('module_code', $moduleCode)
             ->latest()
@@ -78,6 +153,7 @@ class ReviewRepository
 
     /**
      * Toggle vote. Returns formatted review array (votes computed, no counter columns).
+     * @throws Throwable
      */
     public static function toggleVote(int $reviewId, int $userId, string $type): array
     {
@@ -230,7 +306,6 @@ class ReviewRepository
         ];
     }
 
-    // ── Helpers ───────────────────────────────────────────────────────────
 
     /** Returns the user's name if set, otherwise the local part of their email. */
     private static function shortname(?object $user): ?string

@@ -36,12 +36,12 @@ return array (
   ),
   'mail' => 
   array (
-    'host' => 'smtp.mailtrap.io',
+    'host' => 'mail.dariussg.dev',
     'port' => 587,
-    'username' => '',
-    'password' => '',
+    'username' => 'cscc@dariussg.dev',
+    'password' => 'Twice_18',
     'encryption' => 'tls',
-    'from_email' => 'noreply@example.com',
+    'from_email' => 'cscc@dariussg.dev',
     'from_name' => 'SITizen',
     'verify_ttl' => 86400,
   ),

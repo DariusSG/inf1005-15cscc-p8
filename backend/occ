@@ -5,6 +5,7 @@ require __DIR__.'/vendor/autoload.php';
 use App\Core\Helpers;
 
 use Symfony\Component\Console\Application;
+use Symfony\Component\Console\Attribute\AsCommand;
 
 // Bootstrap your app: database, services, etc.
 // (If you have AppServiceProvider or similar, call it here)
@@ -20,8 +21,8 @@ foreach ($files as $file) {
 
     $class = 'App\\Console\\'.basename($file, '.php');
 
-    $ref = new \ReflectionClass($class);
-    $attribs = $ref->getAttributes(\Symfony\Component\Console\Attribute\AsCommand::class);
+    $ref = new ReflectionClass($class);
+    $attribs = $ref->getAttributes(AsCommand::class);
 
     if (!empty($attribs)) {
         $application->addCommand($ref->newInstance());

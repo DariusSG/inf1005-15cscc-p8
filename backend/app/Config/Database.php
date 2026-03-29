@@ -4,11 +4,13 @@ namespace App\Config;
 
 use Illuminate\Database\Capsule\Manager as Capsule;
 use App\Core\Helpers;
+use Illuminate\Database\Connection;
+use PDO;
 
 class Database
 {
-    public static function init()
-    {   
+    public static function init(): void
+    {
         self::validateConfig();
 
         $capsule = new Capsule;
@@ -22,6 +24,10 @@ class Database
             'charset'   => Helpers::config('database.charset', 'utf8mb4'),
             'collation' => Helpers::config('database.collation', 'utf8mb4_unicode_ci'),
             'prefix'    => Helpers::config('database.prefix', ''),
+            'options' => [
+                PDO::ATTR_EMULATE_PREPARES => false,
+                PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+            ],
         ]);
 
         $capsule->setAsGlobal();
@@ -53,7 +59,7 @@ class Database
     }
 
 
-    public static function connection()
+    public static function connection(): Connection
     {
         return Capsule::connection();
     }

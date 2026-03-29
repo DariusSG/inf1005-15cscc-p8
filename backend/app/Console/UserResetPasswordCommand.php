@@ -10,7 +10,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
-#[AsCommand(name: 'app:user:reset-password', description: 'Reset a user\'s password')]
+#[AsCommand(name: 'user:reset-password', description: 'Reset a user\'s password')]
 class UserResetPasswordCommand extends Command
 {
     protected static $defaultName = 'app:user:reset-password';

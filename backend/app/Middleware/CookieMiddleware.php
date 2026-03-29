@@ -15,12 +15,12 @@ use App\Core\Request;
  * 
  * Usage in Router:
  * $router->middleware(['CookieMiddleware'], function($router) {
- *     // Protected routes
+ *  $router->get('/some-route', 'SomeController@someMethod');
  * });
  */
-class CookieMiddleware
+class CookieMiddleware implements Middleware
 {
-    public static function handle()
+    public static function handle(string ...$args): void
     {
         // Set default SameSite header for all responses
         // (helps prevent CSRF even if individual cookies aren't set correctly)
@@ -38,7 +38,7 @@ class CookieMiddleware
      * Load preference cookies into request context
      * Makes them accessible to controllers
      */
-    private static function loadPreferences()
+    private static function loadPreferences(): void
     {
         // Example: load common preferences
         $preferences = [
@@ -55,7 +55,7 @@ class CookieMiddleware
     /**
      * Validate cookies and clean up invalid ones
      */
-    private static function validateCookies()
+    private static function validateCookies(): void
     {
         // Remove any cookies that are empty or malformed
         foreach ($_COOKIE as $name => $value) {

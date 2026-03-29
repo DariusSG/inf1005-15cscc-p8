@@ -4,7 +4,7 @@ namespace App\Middleware;
 
 use App\Core\Helpers;
 
-class CorsMiddleware
+class CorsMiddleware implements Middleware
 {
     private static function getAllowedOrigins(): array
     {
@@ -22,7 +22,7 @@ class CorsMiddleware
     }
 
 
-    public static function handle()
+    public static function handle(string ...$args): void
     {
         $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
 

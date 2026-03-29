@@ -2,54 +2,77 @@
 
 namespace App\Core;
 
+use Throwable;
+
 class ErrorHandler
 {
-    public static function register()
+    public static function register(): void
     {
-        set_exception_handler(function ($e) {
-            $requestId = uniqid('req_', true);
-
-            // Log the error
-            Logger::channel()->error($e->getMessage(), [
-                'file'  => $e->getFile(),
-                'line'  => $e->getLine(),
-                'trace' => $e->getTraceAsString(),
-                'path'  => Request::uri(),
-                'method' => Request::method(),
-                'user_id' => Request::context('user_id') ?? 'null',
-                'request_id' => $requestId,
-
-            ]);
-
-            // Send generic JSON response
-            Response::json([
-                "error" => true,
-                "message" => "Internal Server Error",
-                "request_id" => $requestId
-            ], 500);
+        // 1. Convert standard PHP errors (warnings, notices) into Exceptions
+        set_error_handler(function ($severity, $message, $file, $line) {
+            if (!(error_reporting() & $severity)) return;
+            throw new \ErrorException($message, 0, $severity, $file, $line);
         });
 
-        // Catch fatal errors (optional, for shutdown)
-        register_shutdown_function(function () {
-            $error = error_get_last();
-            if ($error && in_array($error['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR])) {
-                $requestId = uniqid('req_', true);
+        // 2. Handle all uncaught Exceptions
+        set_exception_handler([self::class, 'handleException']);
 
-                Logger::channel()->error($error['message'], [
-                    'file' => $error['file'],
-                    'line' => $error['line'],
-                    'request_id' => $requestId,
-                ]);
+        // 3. Handle Fatal Shutdown Errors
+        register_shutdown_function([self::class, 'handleShutdown']);
+    }
 
-                http_response_code(500);
-                header("Content-Type: application/json");
-                echo json_encode([
-                    "error" => true,
-                    "message" => "Internal Server Error",
-                    "request_id" => $requestId
-                ]);
-                exit;
-            }
-        });
+    public static function handleException(Throwable $e): void
+    {
+        $requestId = uniqid('req_', false);
+        $isDebug = Helpers::config('app.debug', false);
+
+        // Log everything to the file
+        Logger::channel()->error($e->getMessage(), [
+            'type'       => get_class($e),
+            'file'       => $e->getFile(),
+            'line'       => $e->getLine(),
+            'path'       => Request::uri(),
+            'method'     => Request::method(),
+            'user_id'    => Request::context('user_id'),
+            'request_id' => $requestId,
+            'trace'      => $isDebug ? $e->getTrace() : 'Redacted',
+        ]);
+
+        // Clear any previous output buffers to ensure a clean JSON response
+        if (ob_get_length()) ob_clean();
+
+        $response = [
+            'error'      => true,
+            'message'    => $isDebug ? $e->getMessage() : 'Internal Server Error',
+            'request_id' => $requestId
+        ];
+
+        if ($isDebug) {
+            $response['debug'] = [
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => array_slice($e->getTrace(), 0, 5) // First 5 steps
+            ];
+        }
+
+        Response::json($response, 500);
+    }
+
+    public static function handleShutdown(): void
+    {
+        $error = error_get_last();
+        $fatalTypes = [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR];
+
+        if ($error && in_array($error['type'], $fatalTypes)) {
+            // Manually trigger the exception handler logic for fatal
+            $exception = new \ErrorException(
+                $error['message'],
+                0,
+                $error['type'],
+                $error['file'],
+                $error['line']
+            );
+            self::handleException($exception);
+        }
     }
 }

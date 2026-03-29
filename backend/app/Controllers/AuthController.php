@@ -4,38 +4,65 @@ namespace App\Controllers;
 
 use App\Core\Request;
 use App\Core\Response;
-use App\Core\Container;
 use App\Core\Cookie;
 use App\Config\JwtConfig;
 use App\Middleware\JwtMiddleware;
+use App\Services\AuthService;
+use App\Services\UserService;
+use App\Services\VerificationService;
+use Exception;
+use InvalidArgumentException;
+use OpenApi\Attributes as OA;
+use RuntimeException;
 
+use App\Core\OpenApiSpec; // Ensure the OpenApiSpec class is included
+
+
+#[OA\Tag(
+    name: 'Authentication',
+    description: 'User authentication and registration endpoints'
+)]
+#[OA\Schema(
+    schema: "TokenResponse",
+    properties: [
+        new OA\Property(property: "access_token", type: "string"),
+        new OA\Property(property: "token_type", type: "string", example: "bearer"),
+        new OA\Property(property: "expires_in", type: "integer", example: 3600)
+    ]
+)]
+#[OA\Schema(
+    schema: "LoginRequest",
+    required: ["email", "password"],
+    properties: [
+        new OA\Property(property: "email", type: "string", format: "email"),
+        new OA\Property(property: "password", type: "string", format: "password")
+    ]
+)]
 class AuthController
 {
-    protected $authService;
-    protected $userService;
+    public function __construct(
+        protected readonly AuthService $authService,
+        protected readonly UserService $userService,
+        protected readonly VerificationService $verificationService,
+    ) {}
 
-    public function __construct()
-    {
-        $this->authService = Container::resolve('AuthService');
-        $this->userService = Container::resolve('UserService');
-    }
-
-    // ── Step 1: request invite email ─────────────────────────────────────
-    /**
-     * @OA\Post(path="/auth/register/request",
-     *   summary="Request registration invite for a SIT email",
-     *   @OA\RequestBody(@OA\MediaType(mediaType="application/json",
-     *     @OA\Schema(required={"email"},
-     *       @OA\Property(property="email", type="string",
-     *         example="john.doe.2023@sit.singaporetech.edu.sg")
-     *     )
-     *   )),
-     *   @OA\Response(response=200, description="Invite sent"),
-     *   @OA\Response(response=400, description="Invalid or non-SIT email"),
-     *   @OA\Response(response=429, description="Rate limited")
-     * )
-     */
-    public function requestRegistration()
+   #[OA\Post(
+        path: "/auth/register/request",
+        summary: "Request registration invite",
+        tags: ["Authentication"],
+        requestBody: new OA\RequestBody(
+            content: new OA\JsonContent(
+                required: ["email"],
+                properties: [new OA\Property(property: "email", type: "string", format: "email")]
+            )
+        ),
+        responses: [
+            new OA\Response(response: 200, description: "Success", content: new OA\JsonContent(properties: [new OA\Property(property: "message", type: "string")])),
+            new OA\Response(response: 400, description: "Invalid Arguments", content: new OA\JsonContent(ref: "#/components/schemas/ErrorResponse")),
+            new OA\Response(response: 500, description: "Server error", content: new OA\JsonContent(ref: "#/components/schemas/ErrorResponse"))
+        ]
+    )]
+    public function requestRegistration(): void
     {
         $data  = Request::body();
         $email = trim($data['email'] ?? '');
@@ -46,26 +73,32 @@ class AuthController
 
         try {
             $this->authService->requestRegistration($email);
-            // Always return the same message to avoid email enumeration
+
             Response::json(['message' => 'If that email is valid, a registration link has been sent.']);
-        } catch (\InvalidArgumentException $e) {
+        } catch (InvalidArgumentException $e) {
             Response::json(['error' => $e->getMessage()], 400);
-        } catch (\RuntimeException $e) {
+        } catch (RuntimeException|Exception $e) {
             Response::json(['error' => $e->getMessage()], 500);
         }
     }
 
-    // ── Step 1b: verify token is still valid (pre-flight for the form) ───
-    /**
-     * @OA\Get(path="/auth/register/verify",
-     *   summary="Check invite token validity before showing the form",
-     *   @OA\Parameter(name="token", in="query", required=true,
-     *     @OA\Schema(type="string")),
-     *   @OA\Response(response=200, description="Token valid — returns masked email"),
-     *   @OA\Response(response=400, description="Invalid or expired token")
-     * )
-     */
-    public function checkVerifyToken()
+    #[OA\Get(
+        path: "/auth/register/verify",
+        summary: "Verify token before showing form",
+        tags: ["Authentication"],
+        parameters: [
+            new OA\Parameter(name: "token", in: "query", required: true, schema: new OA\Schema(type: "string"))
+        ],
+        responses: [
+            new OA\Response(
+                response: 200, 
+                description: "Valid token",
+                content: new OA\JsonContent(properties: [new OA\Property(property: "email", type: "string")])
+            ),
+            new OA\Response(response: 400, description: "Invalid or missing token", content: new OA\JsonContent(ref: "#/components/schemas/ErrorResponse"))
+        ]
+    )]
+    public function checkVerifyToken(): void
     {
         $token = trim($_GET['token'] ?? '');
 
@@ -74,33 +107,42 @@ class AuthController
         }
 
         try {
-            $vs    = Container::resolve('VerificationService');
-            $email = $vs->verifyToken($token);
+            $email = $this->verificationService->verifyToken($token);
 
             // Return masked email so the frontend can show "Registering as …@sit.…"
             // without exposing the full address in the JS bundle
             Response::json(['email' => $this->maskEmail($email)]);
-        } catch (\RuntimeException $e) {
+        } catch (RuntimeException $e) {
             Response::json(['error' => $e->getMessage()], 400);
         }
     }
 
-    // ── Step 2: complete registration ────────────────────────────────────
-    /**
-     * @OA\Post(path="/auth/register/complete",
-     *   summary="Complete registration using the invite token",
-     *   @OA\RequestBody(@OA\MediaType(mediaType="application/json",
-     *     @OA\Schema(required={"token","name","password"},
-     *       @OA\Property(property="token",    type="string"),
-     *       @OA\Property(property="name",     type="string"),
-     *       @OA\Property(property="password", type="string")
-     *     )
-     *   )),
-     *   @OA\Response(response=201, description="Account created, returns access token"),
-     *   @OA\Response(response=400, description="Validation or token error")
-     * )
-     */
-    public function completeRegistration()
+    #[OA\Post(
+        path: "/auth/register/complete",
+        summary: "Complete registration using the invite token",
+        tags: ["Authentication"],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                required: ["token", "name", "password"],
+                properties: [
+                    new OA\Property(property: "token", type: "string", description: "The verification token from the email"),
+                    new OA\Property(property: "name", type: "string", example: "John Doe"),
+                    new OA\Property(property: "password", type: "string", format: "password", minLength: 8)
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(
+                response: 201,
+                description: "Account created successfully",
+                content: new OA\JsonContent(ref: "#/components/schemas/TokenResponse")
+            ),
+            new OA\Response(response: 400, description: "Validation or token error", content: new OA\JsonContent(ref: "#/components/schemas/ErrorResponse")),
+            new OA\Response(response: 409, description: "User already exists or token expired", content: new OA\JsonContent(ref: "#/components/schemas/ErrorResponse"))
+        ]
+    )]
+    public function completeRegistration(): void
     {
         $data     = Request::body();
         $token    = trim($data['token']    ?? '');
@@ -115,30 +157,31 @@ class AuthController
             $tokens = $this->authService->completeRegistration($token, $name, $password);
 
             Cookie::setRefreshToken($tokens['refresh_token'], JwtConfig::refresh_ttl());
-            unset($tokens['refresh_token']);
 
             Response::json($tokens, 201);
-        } catch (\InvalidArgumentException $e) {
+        } catch (InvalidArgumentException $e) {
             Response::json(['error' => 'Invalid registration data'], 400);
-        } catch (\RuntimeException $e) {
+        } catch (RuntimeException $e) {
             Response::json(['error' => $e->getMessage()], 409);
         }
     }
 
-    // ── Login ─────────────────────────────────────────────────────────────
-    /**
-     * @OA\Post(path="/auth/login", summary="Login",
-     *   @OA\RequestBody(@OA\MediaType(mediaType="application/json",
-     *     @OA\Schema(required={"email","password"},
-     *       @OA\Property(property="email",    type="string"),
-     *       @OA\Property(property="password", type="string")
-     *     )
-     *   )),
-     *   @OA\Response(response=200, description="Successful login"),
-     *   @OA\Response(response=401, description="Invalid credentials")
-     * )
-     */
-    public function login()
+    #[OA\Post(
+        path: "/auth/login",
+        summary: "Login",
+        tags: ["Authentication"],
+        requestBody: new OA\RequestBody(content: new OA\JsonContent(ref: "#/components/schemas/LoginRequest")),
+        responses: [
+            new OA\Response(
+                response: 200, 
+                description: "Success", 
+                content: new OA\JsonContent(ref: "#/components/schemas/TokenResponse")
+            ),
+            new OA\Response(response: 401, description: "Invalid credentials", content: new OA\JsonContent(ref: "#/components/schemas/ErrorResponse")),
+            new OA\Response(response: 500, description: "Server error", content: new OA\JsonContent(ref: "#/components/schemas/ErrorResponse"))
+        ]
+    )]
+    public function login(): void
     {
         $data     = Request::body();
         $email    = $data['email']    ?? '';
@@ -152,7 +195,6 @@ class AuthController
             }
 
             Cookie::setRefreshToken($tokens['refresh_token'], JwtConfig::refresh_ttl());
-            unset($tokens['refresh_token']);
 
             Response::json($tokens);
         } catch (\Exception $e) {
@@ -160,14 +202,21 @@ class AuthController
         }
     }
 
-    // ── Me ────────────────────────────────────────────────────────────────
-    /**
-     * @OA\Get(path="/auth/me", summary="Get current user",
-     *   security={{"bearerAuth":{}}},
-     *   @OA\Response(response=200, description="Current user"),
-     *   @OA\Response(response=401, description="Unauthorized")
-     * )
-     */
+    #[OA\Get(
+        path: "/auth/me",
+        summary: "Get current user",
+        tags: ["Authentication"],
+        security: [["bearerAuth" => []]],
+        responses: [
+            new OA\Response(
+                response: 200, 
+                description: "Current user", 
+                content: new OA\JsonContent(ref: "#/components/schemas/User")
+            ),
+            new OA\Response(response: 401, description: "Unauthorized", content: new OA\JsonContent(ref: "#/components/schemas/ErrorResponse")),
+            new OA\Response(response: 404, description: "User not found", content: new OA\JsonContent(ref: "#/components/schemas/ErrorResponse"))
+        ]
+    )]
     public function me()
     {
         $payload = JwtMiddleware::getPayload();
@@ -183,17 +232,34 @@ class AuthController
         }
     }
 
-    // ── Refresh ───────────────────────────────────────────────────────────
-    /**
-     * @OA\Post(path="/auth/refresh", summary="Refresh access token",
-     *   @OA\Response(response=200, description="Token refreshed"),
-     *   @OA\Response(response=401, description="Unauthorized")
-     * )
-     */
-    public function refresh()
+    #[OA\Post(
+        path: "/auth/refresh",
+        summary: "Refresh access token",
+        tags: ["Authentication"],
+        requestBody: new OA\RequestBody(
+            content: new OA\JsonContent(
+                properties: [
+                    new OA\Property(property: "refresh_token", type: "string", description: "Optional if sent via cookie")
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "Token refreshed",
+                content: new OA\JsonContent(ref: "#/components/schemas/TokenResponse")
+            ),
+            new OA\Response(
+                response: 401, 
+                description: "Unauthorized / Invalid Refresh Token",
+                content: new OA\JsonContent(ref: "#/components/schemas/ErrorResponse")
+            )
+        ]
+    )]
+    public function refresh(): void
     {
         $data         = Request::body();
-        $refreshToken = $data['refresh_token'] ?? Cookie::getRefreshToken();
+        $refreshToken = Cookie::get('refresh_token', $data['refresh_token'] ?? null);
 
         if (!$refreshToken) {
             Response::json(['error' => 'Refresh token required'], 400);
@@ -209,17 +275,38 @@ class AuthController
         }
     }
 
-    // ── Logout ────────────────────────────────────────────────────────────
-    /**
-     * @OA\Post(path="/auth/logout", summary="Logout",
-     *   security={{"bearerAuth":{}}},
-     *   @OA\Response(response=200, description="Logged out")
-     * )
-     */
-    public function logout()
+    #[OA\Post(
+        path: "/auth/logout",
+        summary: "Logout user and invalidate tokens",
+        tags: ["Authentication"],
+        security: [["bearerAuth" => []]],
+        requestBody: new OA\RequestBody(
+            content: new OA\JsonContent(
+                properties: [
+                    new OA\Property(property: "refresh_token", type: "string", description: "Optional if sent via cookie"),
+                    new OA\Property(property: "access_token", type: "string", description: "The current access token to invalidate")
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "Logged out successfully",
+                content: new OA\JsonContent(
+                    properties: [new OA\Property(property: "message", type: "string", example: "Logged out")]
+                )
+            ),
+            new OA\Response(
+                response: 401,
+                description: "Session already expired",
+                content: new OA\JsonContent(ref: "#/components/schemas/ErrorResponse")
+            )
+        ]
+    )]
+    public function logout(): void
     {
         $data         = Request::body();
-        $refreshToken = $data['refresh_token'] ?? Cookie::getRefreshToken();
+        $refreshToken = Cookie::get('refresh_token', $data['refresh_token'] ?? null);
         $accessToken  = $data['access_token']  ?? null;
 
         if (!$refreshToken) {
@@ -228,7 +315,7 @@ class AuthController
 
         try {
             $result = $this->authService->logout($refreshToken, $accessToken);
-            Cookie::deleteRefreshToken();
+            Cookie::delete('refresh_token');
             Response::json($result);
         } catch (\Exception $e) {
             Response::json(['error' => $e->getMessage()], 401);

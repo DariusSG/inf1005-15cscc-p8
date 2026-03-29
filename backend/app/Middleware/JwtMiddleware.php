@@ -5,16 +5,18 @@ namespace App\Middleware;
 use App\Core\Request;
 use App\Core\Response;
 use App\Core\Container;
+use App\Services\TokenService;
+use Exception;
 use Firebase\JWT\ExpiredException;
 
-class JwtMiddleware
+class JwtMiddleware implements Middleware
 {   
      /**
      * Handle JWT authentication and optional role-based access
      *
      * @param string ...$roles Allowed roles for this route (variadic)
      */
-    public static function handle(string ...$roles)
+    public static function handle(string ...$roles): void
     {
         $header = Request::header('Authorization');
         if (!$header) {
@@ -25,7 +27,7 @@ class JwtMiddleware
 
         try {
             // Validate access token and get payload
-            $tokenService = Container::resolve('TokenService');
+            $tokenService = Container::resolve(TokenService::class);
             $payload = $tokenService->verifyAccessToken($token);
 
             // RBAC check
@@ -36,10 +38,10 @@ class JwtMiddleware
             Request::setContext('user_id', $payload->sub);
             Request::setContext('user_role', $payload->role);
             Request::setContext('token', $payload);
-        } catch (ExpiredException $e) {
-            Response::json(["error" => "Access token expired. Please refresh."], 401);
-        } catch (\Exception $e) {
-            Response::json(["error" => $e->getMessage()], 401);
+        } catch (ExpiredException) {
+            Response::json(["error" => "Token expired"], 401);
+        } catch (Exception $e) {
+            Response::json(["error" => "Unauthorized: " . $e->getMessage()], 401);
         }
         
     }

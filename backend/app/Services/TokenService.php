@@ -2,24 +2,25 @@
 
 namespace App\Services;
 
+use Exception;
 use Firebase\JWT\JWT;
-use Firebase\JWT\JWTException;
 use Firebase\JWT\Key;
 use App\Config\JwtConfig;
 use App\Models\Session;
 use Illuminate\Database\Capsule\Manager as Capsule;
 use App\Models\RefreshToken;
 use Carbon\Carbon;
+use Random\RandomException;
+use Throwable;
 
 class TokenService
 {
-    private const ISSUER = "sitizen-api";
-    private const AUDIENCE = "sitizen-client";
-
-    private const BIND_TO_IP = true;
+    private const string ISSUER = "sitizen-api";
+    private const string AUDIENCE = "sitizen-client";
 
     /**
      * Create access token, store JTI in sessions table
+     * @throws Exception
      */
     public function createAccessToken(int $userId, string $role = "user", ?string $refreshJti = null): string
     {
@@ -40,8 +41,6 @@ class TokenService
             'user_id'    => $userId,
             'jti'        => $jti,
             'refresh_jti'=> $refreshJti,
-            'ip'         => self::BIND_TO_IP ? ($_SERVER['REMOTE_ADDR'] ?? null) : null,
-            'user_agent' => self::BIND_TO_IP ? ($_SERVER['HTTP_USER_AGENT'] ?? null) : null,
             'expires_at' => Carbon::createFromTimestamp($payload['exp']),
             'revoked'    => false
         ]);
@@ -57,6 +56,7 @@ class TokenService
 
     /**
      * Verify access token and check session (JTI)
+     * @throws Exception
      */
     public function verifyAccessToken(string $token): object
     {
@@ -70,50 +70,22 @@ class TokenService
         );
 
         if ($payload->iss !== self::ISSUER || $payload->aud !== self::AUDIENCE) {
-            throw new \Exception("Invalid token issuer/audience");
-        }
-
-        $session = Session::where('jti', $payload->jti)->first();
-        if ($session && self::BIND_TO_IP) {
-            $clientIp = self::normalizeIp($_SERVER['REMOTE_ADDR'] ?? '');
-            $tokenIp = self::normalizeIp($session->ip ?? '');
-            
-            if ($tokenIp && $clientIp !== $tokenIp) {
-                throw new \Exception("Token used from unexpected location");
-            }
+            throw new Exception("Invalid token issuer/audience");
         }
 
         $session = Session::where('jti', $payload->jti)->first();
         if (!$session || $session->revoked || strtotime($session->expires_at) < time()) {
-            throw new \Exception("Access token revoked or expired");
+            throw new Exception("Access token revoked or expired");
         }
 
         return $payload;
     }
 
-    /**
-     * Normalize IP address for comparison
-     * Handles IPv4-mapped IPv6 addresses
-     */
-    private static function normalizeIp(string $ip): string
-    {
-        // Handle empty IP
-        if (empty($ip)) {
-            return '';
-        }
-        
-        // Check for IPv4-mapped IPv6 (::ffff:192.168.1.1)
-        if (str_starts_with($ip, '::ffff:')) {
-            $ip = substr($ip, 7);
-        }
-        
-        return $ip;
-    }
 
     /**
      * Revoke access token (by JTI)
      */
-    public function revokeAccessToken(string $jti)
+    public function revokeAccessToken(string $jti): void
     {
         $session = Session::where('jti', $jti)->first();
         if ($session) {
@@ -124,10 +96,16 @@ class TokenService
 
     /**
      * Create refresh token, store in DB for rotation
+     * @throws Exception
      */
     public function createRefreshToken(int $userId): string
     {
-        $jti = bin2hex(random_bytes(16));
+        try {
+            $jti = bin2hex(random_bytes(16));
+        } catch (RandomException $e) {
+            throw new Exception($e->getMessage());
+        }
+
         $payload = [
             "sub"  => $userId,
             "type" => "refresh",
@@ -163,6 +141,7 @@ class TokenService
 
     /**
      * Verify and atomically consume refresh token to prevent race conditions
+     * @throws Throwable
      */
     public function verifyAndConsumeRefreshToken(string $token): object
     {
@@ -179,7 +158,7 @@ class TokenService
             );
 
             if ($payload->iss !== self::ISSUER || $payload->aud !== self::AUDIENCE) {
-                throw new \Exception("Invalid token issuer/audience");
+                throw new Exception("Invalid token issuer/audience");
             }
 
             $dbToken = RefreshToken::where('jti', $payload->jti)
@@ -191,7 +170,7 @@ class TokenService
                 if ($dbToken && $dbToken->revoked) {
                     Session::where('refresh_jti', $payload->jti)->update(['revoked' => true]);
                 }
-                throw new \Exception("Refresh token revoked or expired");
+                throw new Exception("Refresh token revoked or expired");
             }
 
             // Atomically mark as consumed
@@ -206,6 +185,7 @@ class TokenService
     /**
      * Verify a refresh token without consuming it.
      * Used during logout to obtain the JTI before revoking.
+     * @throws Exception
      */
     public function verifyRefreshToken(string $token): object
     {
@@ -218,7 +198,7 @@ class TokenService
         );
 
         if ($payload->iss !== self::ISSUER || $payload->aud !== self::AUDIENCE) {
-            throw new \Exception("Invalid token issuer/audience");
+            throw new Exception("Invalid token issuer/audience");
         }
 
         $hash    = hash('sha256', $token);
@@ -227,7 +207,7 @@ class TokenService
                                ->first();
 
         if (!$dbToken || $dbToken->revoked || Carbon::now()->gt($dbToken->expires_at)) {
-            throw new \Exception("Refresh token revoked or expired");
+            throw new Exception("Refresh token revoked or expired");
         }
 
         return $payload;
@@ -236,7 +216,7 @@ class TokenService
     /**
      * Revoke refresh token (by JTI)
      */
-    public function revokeRefreshToken(string $jti)
+    public function revokeRefreshToken(string $jti): void
     {
         $token = RefreshToken::where('jti', $jti)->first();
         if ($token) {
@@ -247,6 +227,7 @@ class TokenService
 
     /**
      * Build new access + refresh token pair
+     * @throws Exception
      */
     public function rotateRefreshToken(int $userId, string $role = "student"): array
     {
@@ -270,7 +251,7 @@ class TokenService
         ];
     }
 
-    public function revokeAccessByRefreshJti(string $refreshJti)
+    public function revokeAccessByRefreshJti(string $refreshJti): void
     {
         Session::where('refresh_jti', $refreshJti)
             ->update(['revoked' => true]);

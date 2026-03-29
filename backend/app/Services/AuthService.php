@@ -6,57 +6,61 @@ use App\Repositories\UserRepository;
 use App\Core\Container;
 use App\Core\Logger;
 use App\Core\Request;
+use Exception;
+use InvalidArgumentException;
+use RuntimeException;
+use Throwable;
 
 class AuthService
 {
-    protected $tokenService;
+    public function __construct(
+        protected readonly TokenService $tokenService,
+        protected readonly UserService $userService,
+        protected readonly VerificationService $verificationService,
+    ) {}
 
-    public function __construct()
-    {
-        $this->tokenService = Container::resolve('TokenService');
-    }
-
-    // ── Step 1: validate email + send invite ────────────────────────────
-
+    /**
+     * @throws Exception
+     */
     public function requestRegistration(string $email): void
     {
-        /** @var VerificationService $vs */
-        $vs = Container::resolve('VerificationService');
-        $vs->sendInvite($email);
+        $this->verificationService->assertSitEmail($email);
+        if (UserRepository::findByEmail($email)) {
+            // We throw an exception so the Controller can return a 409 Conflict
+            throw new InvalidArgumentException('An account with this email already exists.');
+        }
+        $this->verificationService->sendInvite($email);
     }
 
-    // ── Step 2: complete registration via token ─────────────────────────
-
+    /**
+     * @throws Exception
+     */
     public function completeRegistration(string $rawToken, string $name, string $password): array
     {
-        /** @var VerificationService $vs */
-        $vs = Container::resolve('VerificationService');
-
-        $email = $vs->verifyToken($rawToken);
-
-        if (UserRepository::findByEmail($email)) {
-            throw new \RuntimeException('An account for this email already exists.');
-        }
-
-        if (strlen(trim($name)) < 2) {
-            throw new \InvalidArgumentException('Name must be at least 2 characters.');
-        }
+        $email = $this->verificationService->verifyToken($rawToken);
 
         if (strlen($password) < 8) {
-            throw new \InvalidArgumentException('Password must be at least 8 characters.');
+            throw new InvalidArgumentException('Password must be at least 8 characters.');
         }
 
         $hashed = password_hash($password, PASSWORD_ARGON2ID);
 
-        $user = UserRepository::create($email, $hashed, 'student', trim($name));
+        $user = $this->userService->createUser($name, $email, $hashed);
 
-        $vs->consumeToken($rawToken);
+        $this->verificationService->consumeToken($rawToken);
+
+        AuditService::log('auth.registration.complete', [
+            'user_id' => $user->id,
+            'email' => $email
+        ]);
 
         return $this->tokenService->rotateRefreshToken($user->id, $user->role ?? 'student');
     }
 
-    // ── Login ────────────────────────────────────────────────────────────
 
+    /**
+     * @throws Exception
+     */
     public function login(string $email, string $password): ?array
     {
         $user = UserRepository::findByEmail($email);
@@ -77,22 +81,26 @@ class AuthService
         return $this->tokenService->rotateRefreshToken($user->id, $user->role ?? 'student');
     }
 
-    // ── Refresh ──────────────────────────────────────────────────────────
 
+    /**
+     * @throws Throwable
+     */
     public function refresh(string $refreshToken): array
     {
         $payload = $this->tokenService->verifyAndConsumeRefreshToken($refreshToken);
 
         $user = UserRepository::findById($payload->sub);
         if (!$user) {
-            throw new \RuntimeException('User not found');
+            throw new RuntimeException('User not found');
         }
 
-        return $this->tokenService->rotateRefreshToken($user->id, $user->role ?? 'student', $payload->jti);
+        return $this->tokenService->rotateRefreshToken($user->id, $user->role ?? 'student');
     }
 
-    // ── Logout ───────────────────────────────────────────────────────────
 
+    /**
+     * @throws Exception
+     */
     public function logout(string $refreshToken, ?string $accessToken = null): array
     {
         $refreshPayload = $this->tokenService->verifyRefreshToken($refreshToken);
@@ -103,7 +111,7 @@ class AuthService
             try {
                 $accessPayload = $this->tokenService->verifyAccessToken($accessToken);
                 $this->tokenService->revokeAccessToken($accessPayload->jti);
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 Logger::channel()->warning('Access token logout failed: ' . $e->getMessage(), [
                     'user_id' => Request::context('user_id'),
                 ]);

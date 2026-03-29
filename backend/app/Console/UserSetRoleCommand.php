@@ -10,7 +10,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
-#[AsCommand(name: 'app:user:set-role', description: 'Set user role')]
+#[AsCommand(name: 'user:set-role', description: 'Set user role')]
 class UserSetRoleCommand extends Command
 {
     protected static $defaultName = 'app:user:set-role';

@@ -5,10 +5,12 @@ namespace App\Console;
 use App\Config\Database;
 use App\Core\Helpers;
 use App\Core\Migrator;
+use Illuminate\Database\Capsule\Manager;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
+use Throwable;
 
 #[AsCommand(name: 'app:status', description: 'Show application status')]
 class StatusCommand extends Command
@@ -34,19 +36,19 @@ class StatusCommand extends Command
         // ── Database ──────────────────────────────────────────────────────
         try {
             Database::init();
-            \Illuminate\Database\Capsule\Manager::connection()->getPdo();
+            Manager::connection()->getPdo();
             $output->writeln('Database  : <info>connected</info>');
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $output->writeln('Database  : <error>FAILED — ' . $e->getMessage() . '</error>');
             $output->writeln('');
             return Command::FAILURE;
         }
 
         // ── Migrations table ──────────────────────────────────────────────
-        $hasMigrTable = Migrator::hasMigrationsTable();
-        $output->writeln('Migrations table : ' . ($hasMigrTable ? '<info>exists</info>' : '<comment>missing</comment>'));
+        $hasMigrationTable = Migrator::hasMigrationsTable();
+        $output->writeln('Migrations table : ' . ($hasMigrationTable ? '<info>exists</info>' : '<comment>missing</comment>'));
 
-        if ($hasMigrTable) {
+        if ($hasMigrationTable) {
             $applied = Migrator::appliedMigrations();
             $output->writeln('Applied migrations (' . count($applied) . '):');
             foreach ($applied as $m) {

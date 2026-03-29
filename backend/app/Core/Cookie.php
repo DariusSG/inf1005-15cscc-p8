@@ -2,50 +2,39 @@
 
 namespace App\Core;
 
-
-
 class Cookie
 {
     /**
-     * Default cookie options
+     * Centralized defaults to ensure consistent security across all methods.
      */
-    private static $defaults = [
-        'path' => '/',
-        'samesite' => 'Strict',
-        'httponly' => true,
-    ];
-
-    /**
-     * Set a cookie with secure defaults
-     *
-     * @param string $name Cookie name
-     * @param string $value Cookie value
-     * @param array $options Optional: path, domain, expires, secure, httponly, samesite
-     */
-    public static function set(string $name, string $value, array $options = []): void
+    private static function getDefaults(): array
     {
-        $options = array_merge(self::$defaults, $options);
-        
-        // Auto-detect secure flag for production
-        if (!isset($options['secure'])) {
-            $options['secure'] = self::isProduction();
-        }
-
-        // Set expiration in seconds if not provided
-        if (!isset($options['expires'])) {
-            $options['expires'] = 0; // Session cookie
-        }
-
-        setcookie($name, $value, $options);
+        return [
+            'path'     => '/',
+            'domain'   => Helpers::config('app.domain', ''),
+            'secure'   => Helpers::config('app.env') === 'prod',
+            'httponly' => true,
+            'samesite' => 'Strict',
+        ];
     }
 
     /**
-     * Set a persistent cookie (expires after N days)
-     *
-     * @param string $name Cookie name
-     * @param string $value Cookie value
-     * @param int $days Days until expiration
-     * @param array $options Additional cookie options
+     * The master set method. All other setters flow through here.
+     */
+    public static function set(string $name, string $value, array $options = []): void
+    {
+        // Merge provided options into the secure defaults
+        $params = array_merge(self::getDefaults(), $options);
+
+        // setcookie accepts the options array in PHP 7.3+
+        setcookie($name, $value, $params);
+
+        // Update superglobal so it's available in the current request immediately
+        $_COOKIE[$name] = $value;
+    }
+
+    /**
+     * Set a persistent cookie using days or seconds (TTL).
      */
     public static function setPersistent(string $name, string $value, int $days = 7, array $options = []): void
     {
@@ -53,135 +42,55 @@ class Cookie
         self::set($name, $value, $options);
     }
 
-    /**
-     * Get a cookie value
-     *
-     * @param string $name Cookie name
-     * @param mixed $default Default value if not found
-     * @return mixed
-     */
-    public static function get(string $name, $default = null)
+    public static function get(string $name, mixed $default = null): mixed
     {
         return $_COOKIE[$name] ?? $default;
     }
 
-    /**
-     * Check if cookie exists
-     *
-     * @param string $name Cookie name
-     * @return bool
-     */
     public static function has(string $name): bool
     {
         return isset($_COOKIE[$name]);
     }
 
-    /**
-     * Delete a cookie
-     *
-     * @param string $name Cookie name
-     */
     public static function delete(string $name): void
     {
-        setcookie($name, '', [
-            'expires' => time() - 3600,
-            'path' => '/',
-            'secure' => self::isProduction(),
-            'httponly' => true,
-            'samesite' => 'Strict'
-        ]);
-        
-        unset($_COOKIE[$name]);
-    }
-
-    /**
-     * Clear all cookies
-     */
-    public static function clear(): void
-    {
-        foreach ($_COOKIE as $name => $value) {
-            self::delete($name);
+        if (isset($_COOKIE[$name])) {
+            self::set($name, '', ['expires' => time() - 3600]);
+            unset($_COOKIE[$name]);
         }
     }
 
     /**
-     * Check if running in production environment
-     *
-     * @return bool
-     */
-    private static function isProduction(): bool
-    {
-        return !empty(Helpers::config('app.env')) && Helpers::config('app.env') === 'prod';
-    }
-
-    /**
-     * Set a cookie with custom TTL (time-to-live in seconds)
-     *
-     * @param string $name Cookie name
-     * @param string $value Cookie value
-     * @param int $ttl Time to live in seconds
-     * @param array $options Additional cookie options
-     */
-    public static function setWithTtl(string $name, string $value, int $ttl, array $options = []): void
-    {
-        $options['expires'] = time() + $ttl;
-        self::set($name, $value, $options);
-    }
-
-    /**
-     * Set authentication cookie (refresh token)
-     *
-     * @param string $token Token value
-     * @param int $ttl Time to live in seconds
+     * Special case: Auth/Refresh tokens should be extremely locked down.
      */
     public static function setRefreshToken(string $token, int $ttl): void
     {
         self::set('refresh_token', $token, [
-            'expires' => time() + $ttl,
-            'path' => '/',
-            'secure' => self::isProduction(),
-            'httponly' => true,
-            'samesite' => 'Strict'
+            'expires'  => time() + $ttl,
+            'samesite' => 'Strict',
+            'httponly' => true
         ]);
     }
 
     /**
-     * Get refresh token from cookie
-     *
-     * @return string|null
+     * Special case: Preferences/UI settings that JavaScript needs to read.
      */
-    public static function getRefreshToken(): ?string
+    public static function setPreference(string $name, string $value, int $days = 365): void
     {
-        return self::get('refresh_token');
+        self::set($name, $value, [
+            'expires'  => time() + ($days * 86400),
+            'httponly' => false, // JS can read this
+            'samesite' => 'Lax'   // Lax is usually better for UI state
+        ]);
     }
 
-    /**
-     * Delete refresh token cookie
-     */
-    public static function deleteRefreshToken(): void
+    public static function clear(): void
     {
-        self::delete('refresh_token');
+        foreach (array_keys($_COOKIE) as $name) {
+            self::delete($name);
+        }
     }
 
-    /**
-     * Set a preference/settings cookie (not httponly, can be accessed by JS)
-     *
-     * @param string $name Cookie name
-     * @param string $value Cookie value
-     * @param int $days Days until expiration
-     */
-    public static function setPreference(string $name, string $value, int $days = 365, array $options = []): void
-    {
-        $options['httponly'] = false; // Allow JS access for preferences
-        $options['expires'] = time() + ($days * 86400);
-        self::set($name, $value, $options);
-    }
-
-    /**
-     * Get all cookies as array
-     *
-     * @return array
-     */
     public static function all(): array
     {
         return $_COOKIE;

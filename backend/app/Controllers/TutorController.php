@@ -7,21 +7,55 @@ use App\Core\Response;
 use App\Core\Validators;
 use App\Middleware\JwtMiddleware;
 use App\Repositories\TutorRepository;
+use OpenApi\Attributes as OA;
 
+#[OA\Tag(
+    name: 'Tutors',
+    description: 'Tutor listings and management'
+)]
 class TutorController
 {
-    /**
-     * @OA\Get(path="/tutors", summary="List tutors",
-     *   security={{"bearerAuth":{}}},
-     *   @OA\Parameter(name="search", in="query", @OA\Schema(type="string")),
-     *   @OA\Response(response=200, description="Array of tutors")
-     * )
-     */
-    public function index()
+    #[OA\Get(
+        path: "/tutors",
+        summary: "List tutors (paginated)",
+        tags: ["Tutors"],
+        security: [["bearerAuth" => []]],
+        parameters: [
+            new OA\Parameter(name: "search", in: "query", schema: new OA\Schema(type: "string"), description: "Search in name or module code"),
+            new OA\Parameter(
+                parameter: "QueryPage",
+                name: "page",
+                in: "query",
+                required: false,
+                schema: new OA\Schema(type: "integer", minimum: 1, default: 1)
+            ),
+            new OA\Parameter(
+                parameter: "QueryPerPage",
+                name: "per_page",
+                in: "query",
+                required: false,
+                schema: new OA\Schema(type: "integer", minimum: 1, maximum: 100, default: 20)
+            )
+        ],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "Success",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "data", type: "array", items: new OA\Items(ref: "#/components/schemas/Tutor")),
+                        new OA\Property(property: "meta", ref: "#/components/schemas/PaginationMeta")
+                    ]
+                )
+            ),
+            new OA\Response(response: 401, description: "Unauthorized")
+        ]
+    )]
+    public function index($search, int $page = 1, int $perPage = 20)
     {
-        $page = max(1, (int) ($_GET['page'] ?? 1));
-        $perPage = min(100, max(1, (int) ($_GET['per_page'] ?? 20)));
-        $search = $_GET['search'] ?? null;
+        $page = max(1, $page);
+        $perPage = min(100, max(1, $perPage));
+        $search = $search ?? null;
 
         $result = TutorRepository::paginate([
             'search' => $search,
@@ -33,32 +67,43 @@ class TutorController
         ]);
     }
 
-    /**
-     * @OA\Post(path="/tutors", summary="Create tutor listing",
-     *   security={{"bearerAuth":{}}},
-     *   @OA\RequestBody(@OA\MediaType(mediaType="application/json",
-     *     @OA\Schema(required={"name"},
-     *       @OA\Property(property="name",          type="string"),
-     *       @OA\Property(property="module_codes",  type="array",
-     *         @OA\Items(type="string")),
-     *       @OA\Property(property="contact_email", type="string"),
-     *       @OA\Property(property="bio",           type="string"),
-     *       @OA\Property(property="rate",          type="number")
-     *     )
-     *   )),
-     *   @OA\Response(response=201, description="Tutor listing created")
-     * )
-     */
+    #[OA\Post(
+        path: "/tutors",
+        summary: "Create a new tutor listing",
+        tags: ["Tutors"],
+        security: [["bearerAuth" => []]],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                required: ["name", "contact_email"],
+                properties: [
+                    new OA\Property(property: "name", type: "string"),
+                    new OA\Property(property: "module_codes", type: "array", items: new OA\Items(type: "string")),
+                    new OA\Property(property: "contact_email", type: "string", format: "email"),
+                    new OA\Property(property: "bio", type: "string"),
+                    new OA\Property(property: "rate", type: "number", minimum: 0, maximum: 1000)
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(
+                response: 201, 
+                description: "Tutor listing created", 
+                content: new OA\JsonContent(ref: "#/components/schemas/Tutor")
+            ),
+            new OA\Response(response: 400, description: "Validation error", content: new OA\JsonContent(ref: "#/components/schemas/ErrorResponse"))
+        ]
+    )]
     public function store()
     {
         $userId = JwtMiddleware::userId();
         $data   = Request::body();
 
         try {
-            $name         = Validators::title($data['name'] ?? '', 100);
+            $name         = Validators::stringCheck($data['name'] ?? '', 'Title', 100);
             $contactEmail = Validators::email($data['contact_email'] ?? null);
-            $bio          = isset($data['bio']) ? Validators::text($data['bio'], 1000) : null;
-            $rate         = Validators::rate($data['rate'] ?? null);
+            $bio          = isset($data['bio']) ? Validators::stringCheck($data['bio'], 'Content', 1000) : null;
+            $rate         = Validators::rangeCheck($data['rate'] ?? null, 0, 1000, 'Rate');
             $moduleCodes  = array_filter(
                 array_map('strtoupper', (array) ($data['module_codes'] ?? [])),
                 fn($c) => preg_match('/^[A-Za-z0-9]{2,10}$/', $c)

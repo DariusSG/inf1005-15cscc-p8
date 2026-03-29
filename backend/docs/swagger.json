@@ -1,32 +1,217 @@
 {
     "openapi": "3.0.0",
+    "servers": [
+        {
+            "url": "/api/v1"
+        }
+    ],
     "paths": {
-        "/admin/reported-reviews": {
+        "/admin/reviews/report": {
             "get": {
-                "summary": "Get paginated reported reviews",
-                "operationId": "23eb4833cf1dbf92e821e061928e027e",
+                "tags": [
+                    "Admin"
+                ],
+                "summary": "List all reported reviews (paginated)",
+                "operationId": "3ced10b3d17c2d6a8bb3555d5ed7579c",
                 "parameters": [
                     {
+                        "parameter": "QueryPage",
                         "name": "page",
                         "in": "query",
+                        "required": false,
                         "schema": {
-                            "type": "integer"
+                            "type": "integer",
+                            "default": 1,
+                            "minimum": 1
                         }
                     },
                     {
+                        "parameter": "QueryPerPage",
                         "name": "per_page",
                         "in": "query",
+                        "required": false,
                         "schema": {
+                            "type": "integer",
+                            "default": 20,
+                            "maximum": 100,
+                            "minimum": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Paginated list of reported reviews",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/ReportedReviews"
+                                        },
+                                        "meta": {
+                                            "$ref": "#/components/schemas/PaginationMeta"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/admin/users": {
+            "get": {
+                "tags": [
+                    "Admin"
+                ],
+                "summary": "List all users (paginated)",
+                "operationId": "a220e2eaf750874d80b4117d717d9290",
+                "parameters": [
+                    {
+                        "parameter": "QueryPage",
+                        "name": "page",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 1,
+                            "minimum": 1
+                        }
+                    },
+                    {
+                        "parameter": "QueryPerPage",
+                        "name": "per_page",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 20,
+                            "maximum": 100,
+                            "minimum": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Paginated list of users",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/User"
+                                            }
+                                        },
+                                        "meta": {
+                                            "$ref": "#/components/schemas/PaginationMeta"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/admin/users/{id}": {
+            "get": {
+                "tags": [
+                    "Admin"
+                ],
+                "summary": "Get user by ID",
+                "operationId": "7877d74a8f5280eed05bd5edb4cf3077",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "description": "User ID",
                             "type": "integer"
                         }
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "Paginated reported reviews"
+                        "description": "User details",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/User"
+                                }
+                            }
+                        }
                     },
-                    "403": {
-                        "description": "Forbidden — admin only"
+                    "404": {
+                        "description": "User not found"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/admin/modules": {
+            "post": {
+                "tags": [
+                    "Admin"
+                ],
+                "summary": "Create a new module",
+                "operationId": "2a25d9aa16499a09c9e27bb5b72c9529",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Module"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Module created",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Module"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Validation error"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "409": {
+                        "description": "Module already exists"
                     }
                 },
                 "security": [
@@ -38,7 +223,10 @@
         },
         "/auth/register/request": {
             "post": {
-                "summary": "Request registration invite for a SIT email",
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Request registration invite",
                 "operationId": "7fcbe2d9f0804f175cf5fcb4fc8453f0",
                 "requestBody": {
                     "content": {
@@ -50,7 +238,7 @@
                                 "properties": {
                                     "email": {
                                         "type": "string",
-                                        "example": "john.doe.2023@sit.singaporetech.edu.sg"
+                                        "format": "email"
                                     }
                                 },
                                 "type": "object"
@@ -60,20 +248,49 @@
                 },
                 "responses": {
                     "200": {
-                        "description": "Invite sent"
+                        "description": "Success",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
                     },
                     "400": {
-                        "description": "Invalid or non-SIT email"
+                        "description": "Invalid Arguments",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
                     },
-                    "429": {
-                        "description": "Rate limited"
+                    "500": {
+                        "description": "Server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
                     }
                 }
             }
         },
         "/auth/register/verify": {
             "get": {
-                "summary": "Check invite token validity before showing the form",
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Verify token before showing form",
                 "operationId": "6c507bade7f8308d9e4abf1eb3a81c11",
                 "parameters": [
                     {
@@ -87,19 +304,42 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "Token valid — returns masked email"
+                        "description": "Valid token",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "email": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
                     },
                     "400": {
-                        "description": "Invalid or expired token"
+                        "description": "Invalid or missing token",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
                     }
                 }
             }
         },
         "/auth/register/complete": {
             "post": {
+                "tags": [
+                    "Authentication"
+                ],
                 "summary": "Complete registration using the invite token",
                 "operationId": "88ce416dc12ec0f68bc87f2cd78b3943",
                 "requestBody": {
+                    "required": true,
                     "content": {
                         "application/json": {
                             "schema": {
@@ -110,13 +350,17 @@
                                 ],
                                 "properties": {
                                     "token": {
+                                        "description": "The verification token from the email",
                                         "type": "string"
                                     },
                                     "name": {
-                                        "type": "string"
+                                        "type": "string",
+                                        "example": "John Doe"
                                     },
                                     "password": {
-                                        "type": "string"
+                                        "type": "string",
+                                        "format": "password",
+                                        "minLength": 8
                                     }
                                 },
                                 "type": "object"
@@ -126,59 +370,125 @@
                 },
                 "responses": {
                     "201": {
-                        "description": "Account created, returns access token"
+                        "description": "Account created successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TokenResponse"
+                                }
+                            }
+                        }
                     },
                     "400": {
-                        "description": "Validation or token error"
+                        "description": "Validation or token error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "User already exists or token expired",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
                     }
                 }
             }
         },
         "/auth/login": {
             "post": {
+                "tags": [
+                    "Authentication"
+                ],
                 "summary": "Login",
                 "operationId": "363e422b5a8c763fa1ea6fd03a77481d",
                 "requestBody": {
                     "content": {
                         "application/json": {
                             "schema": {
-                                "required": [
-                                    "email",
-                                    "password"
-                                ],
-                                "properties": {
-                                    "email": {
-                                        "type": "string"
-                                    },
-                                    "password": {
-                                        "type": "string"
-                                    }
-                                },
-                                "type": "object"
+                                "$ref": "#/components/schemas/LoginRequest"
                             }
                         }
                     }
                 },
                 "responses": {
                     "200": {
-                        "description": "Successful login"
+                        "description": "Success",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TokenResponse"
+                                }
+                            }
+                        }
                     },
                     "401": {
-                        "description": "Invalid credentials"
+                        "description": "Invalid credentials",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
                     }
                 }
             }
         },
         "/auth/me": {
             "get": {
+                "tags": [
+                    "Authentication"
+                ],
                 "summary": "Get current user",
                 "operationId": "e915e82da771b3c813134c1fa5d9c4cf",
                 "responses": {
                     "200": {
-                        "description": "Current user"
+                        "description": "Current user",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/User"
+                                }
+                            }
+                        }
                     },
                     "401": {
-                        "description": "Unauthorized"
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "User not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
                     }
                 },
                 "security": [
@@ -190,25 +500,102 @@
         },
         "/auth/refresh": {
             "post": {
+                "tags": [
+                    "Authentication"
+                ],
                 "summary": "Refresh access token",
                 "operationId": "d6e134316a3213ab2da85eb1e545a77f",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "refresh_token": {
+                                        "description": "Optional if sent via cookie",
+                                        "type": "string"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
                 "responses": {
                     "200": {
-                        "description": "Token refreshed"
+                        "description": "Token refreshed",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TokenResponse"
+                                }
+                            }
+                        }
                     },
                     "401": {
-                        "description": "Unauthorized"
+                        "description": "Unauthorized / Invalid Refresh Token",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
                     }
                 }
             }
         },
         "/auth/logout": {
             "post": {
-                "summary": "Logout",
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Logout user and invalidate tokens",
                 "operationId": "e39ef4c513f6d25e947a67cab73e4b5b",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "refresh_token": {
+                                        "description": "Optional if sent via cookie",
+                                        "type": "string"
+                                    },
+                                    "access_token": {
+                                        "description": "The current access token to invalidate",
+                                        "type": "string"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
                 "responses": {
                     "200": {
-                        "description": "Logged out"
+                        "description": "Logged out successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Logged out"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Session already expired",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
                     }
                 },
                 "security": [
@@ -220,7 +607,10 @@
         },
         "/help-requests": {
             "get": {
-                "summary": "List help requests",
+                "tags": [
+                    "Help Requests"
+                ],
+                "summary": "List help requests (paginated)",
                 "operationId": "aea797985cfac5901e681d8171ac25dd",
                 "parameters": [
                     {
@@ -229,11 +619,52 @@
                         "schema": {
                             "type": "string"
                         }
+                    },
+                    {
+                        "parameter": "QueryPage",
+                        "name": "page",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 1,
+                            "minimum": 1
+                        }
+                    },
+                    {
+                        "parameter": "QueryPerPage",
+                        "name": "per_page",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 20,
+                            "maximum": 100,
+                            "minimum": 1
+                        }
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "Array of help requests"
+                        "description": "Paginated list",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/HelpRequest"
+                                            }
+                                        },
+                                        "meta": {
+                                            "$ref": "#/components/schemas/PaginationMeta"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
                     }
                 },
                 "security": [
@@ -243,14 +674,18 @@
                 ]
             },
             "post": {
-                "summary": "Create help request",
+                "tags": [
+                    "Help Requests"
+                ],
+                "summary": "Create a new help request",
                 "operationId": "fa592aba51d0c6d4fbb4eeeffdc4ae09",
                 "requestBody": {
                     "content": {
                         "application/json": {
                             "schema": {
                                 "required": [
-                                    "title"
+                                    "title",
+                                    "contact_email"
                                 ],
                                 "properties": {
                                     "title": {
@@ -271,13 +706,15 @@
                                         ]
                                     },
                                     "contact_email": {
-                                        "type": "string"
+                                        "type": "string",
+                                        "format": "email"
                                     },
                                     "has_bounty": {
                                         "type": "boolean"
                                     },
                                     "bounty_amount": {
-                                        "type": "number"
+                                        "type": "number",
+                                        "minimum": 0
                                     }
                                 },
                                 "type": "object"
@@ -287,7 +724,17 @@
                 },
                 "responses": {
                     "201": {
-                        "description": "Help request created"
+                        "description": "Created",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HelpRequest"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/ValidationError"
                     }
                 },
                 "security": [
@@ -299,12 +746,16 @@
         },
         "/help-requests/{id}": {
             "get": {
+                "tags": [
+                    "Help Requests"
+                ],
                 "summary": "Get a single help request",
                 "operationId": "9380dd67785b105d08030f61b5c46a1d",
                 "parameters": [
                     {
                         "name": "id",
                         "in": "path",
+                        "description": "The unique ID of the help request",
                         "required": true,
                         "schema": {
                             "type": "integer"
@@ -313,10 +764,27 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "Help request"
+                        "description": "Help request details",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HelpRequest"
+                                }
+                            }
+                        }
                     },
                     "404": {
-                        "description": "Not found"
+                        "description": "Help request not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
                     }
                 },
                 "security": [
@@ -328,6 +796,9 @@
         },
         "/help-requests/{id}/respond": {
             "post": {
+                "tags": [
+                    "Help Requests"
+                ],
                 "summary": "Add a response to a help request",
                 "operationId": "58917eb7464270e56ec3e032df3e60fe",
                 "parameters": [
@@ -341,6 +812,7 @@
                     }
                 ],
                 "requestBody": {
+                    "required": true,
                     "content": {
                         "application/json": {
                             "schema": {
@@ -349,7 +821,8 @@
                                 ],
                                 "properties": {
                                     "content": {
-                                        "type": "string"
+                                        "type": "string",
+                                        "example": "I can help you with this module!"
                                     }
                                 },
                                 "type": "object"
@@ -359,10 +832,34 @@
                 },
                 "responses": {
                     "201": {
-                        "description": "Response added"
+                        "description": "Response added successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HelpRequestResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Validation error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
                     },
                     "404": {
-                        "description": "Not found"
+                        "description": "Help request not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
                     }
                 },
                 "security": [
@@ -374,6 +871,9 @@
         },
         "/help-requests/{id}/solve": {
             "post": {
+                "tags": [
+                    "Help Requests"
+                ],
                 "summary": "Mark a help request as solved",
                 "operationId": "df813aa71b8260dd138ec2c6b97dd338",
                 "parameters": [
@@ -388,13 +888,37 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "Marked as solved"
+                        "description": "Help request marked as solved",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HelpRequest"
+                                }
+                            }
+                        }
                     },
                     "403": {
-                        "description": "Forbidden"
+                        "description": "Forbidden - Not the owner or an admin",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
                     },
                     "404": {
-                        "description": "Not found"
+                        "description": "Help request not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
                     }
                 },
                 "security": [
@@ -406,11 +930,57 @@
         },
         "/modules": {
             "get": {
-                "summary": "List all modules",
+                "tags": [
+                    "Modules"
+                ],
+                "summary": "List all modules (paginated)",
                 "operationId": "050c4a3edda28d46e459ce8e5a190536",
+                "parameters": [
+                    {
+                        "parameter": "QueryPage",
+                        "name": "page",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 1,
+                            "minimum": 1
+                        }
+                    },
+                    {
+                        "parameter": "QueryPerPage",
+                        "name": "per_page",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 20,
+                            "maximum": 100,
+                            "minimum": 1
+                        }
+                    }
+                ],
                 "responses": {
                     "200": {
-                        "description": "Array of modules with review stats"
+                        "description": "Success",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/Module"
+                                            }
+                                        },
+                                        "meta": {
+                                            "$ref": "#/components/schemas/PaginationMeta"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
                     }
                 },
                 "security": [
@@ -422,6 +992,9 @@
         },
         "/modules/{code}": {
             "get": {
+                "tags": [
+                    "Modules"
+                ],
                 "summary": "Get module with reviews",
                 "operationId": "8382c6901efbe5f30a93650cc4c13cf5",
                 "parameters": [
@@ -436,10 +1009,39 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "Module with prereqs, semesters, and reviews"
+                        "description": "Module details with reviews",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/Module"
+                                        },
+                                        {
+                                            "properties": {
+                                                "reviews": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "$ref": "#/components/schemas/Review"
+                                                    }
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
                     },
                     "404": {
-                        "description": "Not found"
+                        "description": "Not Found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
                     }
                 },
                 "security": [
@@ -451,21 +1053,33 @@
         },
         "/reviews": {
             "get": {
-                "summary": "List reviews",
+                "tags": [
+                    "Reviews"
+                ],
+                "summary": "List reviews (paginated, filtered)",
                 "operationId": "260ce19672a2c1cce4b3f72e6344fd95",
                 "parameters": [
                     {
+                        "parameter": "QueryPage",
                         "name": "page",
                         "in": "query",
+                        "required": false,
                         "schema": {
-                            "type": "integer"
+                            "type": "integer",
+                            "default": 1,
+                            "minimum": 1
                         }
                     },
                     {
+                        "parameter": "QueryPerPage",
                         "name": "per_page",
                         "in": "query",
+                        "required": false,
                         "schema": {
-                            "type": "integer"
+                            "type": "integer",
+                            "default": 20,
+                            "maximum": 100,
+                            "minimum": 1
                         }
                     },
                     {
@@ -485,7 +1099,25 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "Paginated list of reviews"
+                        "description": "Success",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/Review"
+                                            }
+                                        },
+                                        "meta": {
+                                            "$ref": "#/components/schemas/PaginationMeta"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
                     }
                 },
                 "security": [
@@ -495,9 +1127,13 @@
                 ]
             },
             "post": {
-                "summary": "Create a review",
+                "tags": [
+                    "Reviews"
+                ],
+                "summary": "Create a new review",
                 "operationId": "f2060db86ac94f49d55790f036ad7bc3",
                 "requestBody": {
+                    "required": true,
                     "content": {
                         "application/json": {
                             "schema": {
@@ -512,7 +1148,9 @@
                                         "type": "string"
                                     },
                                     "rating": {
-                                        "type": "integer"
+                                        "type": "integer",
+                                        "maximum": 5,
+                                        "minimum": 1
                                     },
                                     "title": {
                                         "type": "string"
@@ -537,13 +1175,24 @@
                 },
                 "responses": {
                     "201": {
-                        "description": "Review created"
-                    },
-                    "400": {
-                        "description": "Validation error"
+                        "description": "Created",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Review"
+                                }
+                            }
+                        }
                     },
                     "403": {
-                        "description": "Forbidden"
+                        "description": "Admins cannot write reviews",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
                     }
                 },
                 "security": [
@@ -554,9 +1203,12 @@
             }
         },
         "/reviews/{id}": {
-            "put": {
-                "summary": "Edit own review",
-                "operationId": "e119f3b091ac91c73b19b048c74dc07d",
+            "post": {
+                "tags": [
+                    "Reviews"
+                ],
+                "summary": "Edit your own review",
+                "operationId": "1af876d0fb80584f13d83eb14237d18e",
                 "parameters": [
                     {
                         "name": "id",
@@ -567,15 +1219,44 @@
                         }
                     }
                 ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "rating": {
+                                        "type": "integer",
+                                        "maximum": 5,
+                                        "minimum": 1
+                                    },
+                                    "title": {
+                                        "type": "string"
+                                    },
+                                    "content": {
+                                        "type": "string"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
                 "responses": {
                     "200": {
-                        "description": "Review updated"
+                        "description": "Updated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Review"
+                                }
+                            }
+                        }
                     },
                     "403": {
-                        "description": "Forbidden"
+                        "$ref": "#/components/responses/Forbidden"
                     },
                     "404": {
-                        "description": "Not found"
+                        "$ref": "#/components/responses/NotFound"
                     }
                 },
                 "security": [
@@ -587,6 +1268,9 @@
         },
         "/reviews/{id}/vote": {
             "post": {
+                "tags": [
+                    "Reviews"
+                ],
                 "summary": "Toggle upvote/downvote",
                 "operationId": "34edec447f0cd1a38428ecda38d451e1",
                 "parameters": [
@@ -600,6 +1284,7 @@
                     }
                 ],
                 "requestBody": {
+                    "required": true,
                     "content": {
                         "application/json": {
                             "schema": {
@@ -624,8 +1309,8 @@
                     "200": {
                         "description": "Vote toggled"
                     },
-                    "403": {
-                        "description": "Forbidden"
+                    "400": {
+                        "$ref": "#/components/responses/ValidationError"
                     }
                 },
                 "security": [
@@ -637,6 +1322,9 @@
         },
         "/reviews/{id}/report": {
             "post": {
+                "tags": [
+                    "Reviews"
+                ],
                 "summary": "Toggle report on a review",
                 "operationId": "c06959dbdf90478a0109f54c7cea53c2",
                 "parameters": [
@@ -655,7 +1343,8 @@
                             "schema": {
                                 "properties": {
                                     "reason": {
-                                        "type": "string"
+                                        "type": "string",
+                                        "example": "Inappropriate content"
                                     }
                                 },
                                 "type": "object"
@@ -665,7 +1354,32 @@
                 },
                 "responses": {
                     "200": {
-                        "description": "Report toggled"
+                        "description": "Report toggled",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "reported": {
+                                            "type": "boolean"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Admins cannot report",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
                     }
                 },
                 "security": [
@@ -677,6 +1391,9 @@
         },
         "/reviews/{id}/comments": {
             "post": {
+                "tags": [
+                    "Reviews"
+                ],
                 "summary": "Add a comment to a review",
                 "operationId": "a57a64ec1e96001cb781a37c0ebe546e",
                 "parameters": [
@@ -690,6 +1407,7 @@
                     }
                 ],
                 "requestBody": {
+                    "required": true,
                     "content": {
                         "application/json": {
                             "schema": {
@@ -698,7 +1416,8 @@
                                 ],
                                 "properties": {
                                     "text": {
-                                        "type": "string"
+                                        "type": "string",
+                                        "example": "Great review, thanks!"
                                     }
                                 },
                                 "type": "object"
@@ -708,7 +1427,20 @@
                 },
                 "responses": {
                     "201": {
-                        "description": "Comment added"
+                        "description": "Comment added",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ReviewComment"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/ValidationError"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
                     }
                 },
                 "security": [
@@ -720,20 +1452,68 @@
         },
         "/study-groups": {
             "get": {
-                "summary": "List study groups",
+                "tags": [
+                    "Study Groups"
+                ],
+                "summary": "List study groups (paginated)",
                 "operationId": "509422ddab6184c0e8d1a537d8397c02",
                 "parameters": [
                     {
                         "name": "search",
                         "in": "query",
+                        "description": "Search in name or module code",
                         "schema": {
                             "type": "string"
+                        }
+                    },
+                    {
+                        "parameter": "QueryPage",
+                        "name": "page",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 1,
+                            "minimum": 1
+                        }
+                    },
+                    {
+                        "parameter": "QueryPerPage",
+                        "name": "per_page",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 20,
+                            "maximum": 100,
+                            "minimum": 1
                         }
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "Array of study groups"
+                        "description": "Success",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/StudyGroup"
+                                            }
+                                        },
+                                        "meta": {
+                                            "$ref": "#/components/schemas/PaginationMeta"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
                     }
                 },
                 "security": [
@@ -743,14 +1523,19 @@
                 ]
             },
             "post": {
-                "summary": "Create study group",
+                "tags": [
+                    "Study Groups"
+                ],
+                "summary": "Create a new study group",
                 "operationId": "2c68c99652aeb4535e832c75a146d533",
                 "requestBody": {
+                    "required": true,
                     "content": {
                         "application/json": {
                             "schema": {
                                 "required": [
-                                    "name"
+                                    "name",
+                                    "module_code"
                                 ],
                                 "properties": {
                                     "name": {
@@ -760,13 +1545,16 @@
                                         "type": "string"
                                     },
                                     "description": {
-                                        "type": "string"
+                                        "type": "string",
+                                        "nullable": true
                                     },
                                     "meeting_time": {
-                                        "type": "string"
+                                        "type": "string",
+                                        "nullable": true
                                     },
                                     "location": {
-                                        "type": "string"
+                                        "type": "string",
+                                        "nullable": true
                                     }
                                 },
                                 "type": "object"
@@ -776,7 +1564,24 @@
                 },
                 "responses": {
                     "201": {
-                        "description": "Study group created"
+                        "description": "Study group created",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/StudyGroup"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Validation error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
                     }
                 },
                 "security": [
@@ -788,20 +1593,68 @@
         },
         "/tutors": {
             "get": {
-                "summary": "List tutors",
+                "tags": [
+                    "Tutors"
+                ],
+                "summary": "List tutors (paginated)",
                 "operationId": "4f3b000247765a804a3cf6551ea70bcf",
                 "parameters": [
                     {
                         "name": "search",
                         "in": "query",
+                        "description": "Search in name or module code",
                         "schema": {
                             "type": "string"
+                        }
+                    },
+                    {
+                        "parameter": "QueryPage",
+                        "name": "page",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 1,
+                            "minimum": 1
+                        }
+                    },
+                    {
+                        "parameter": "QueryPerPage",
+                        "name": "per_page",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 20,
+                            "maximum": 100,
+                            "minimum": 1
                         }
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "Array of tutors"
+                        "description": "Success",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/Tutor"
+                                            }
+                                        },
+                                        "meta": {
+                                            "$ref": "#/components/schemas/PaginationMeta"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
                     }
                 },
                 "security": [
@@ -811,14 +1664,19 @@
                 ]
             },
             "post": {
-                "summary": "Create tutor listing",
+                "tags": [
+                    "Tutors"
+                ],
+                "summary": "Create a new tutor listing",
                 "operationId": "6d1240c45e1aa346cd68f0500e6afb0a",
                 "requestBody": {
+                    "required": true,
                     "content": {
                         "application/json": {
                             "schema": {
                                 "required": [
-                                    "name"
+                                    "name",
+                                    "contact_email"
                                 ],
                                 "properties": {
                                     "name": {
@@ -831,13 +1689,16 @@
                                         }
                                     },
                                     "contact_email": {
-                                        "type": "string"
+                                        "type": "string",
+                                        "format": "email"
                                     },
                                     "bio": {
                                         "type": "string"
                                     },
                                     "rate": {
-                                        "type": "number"
+                                        "type": "number",
+                                        "maximum": 1000,
+                                        "minimum": 0
                                     }
                                 },
                                 "type": "object"
@@ -847,74 +1708,24 @@
                 },
                 "responses": {
                     "201": {
-                        "description": "Tutor listing created"
-                    }
-                },
-                "security": [
-                    {
-                        "bearerAuth": []
-                    }
-                ]
-            }
-        },
-        "/users": {
-            "get": {
-                "summary": "Get paginated list of users",
-                "operationId": "1b19ef577de560a5c1ec9c909b88e5cc",
-                "parameters": [
-                    {
-                        "name": "page",
-                        "in": "query",
-                        "schema": {
-                            "type": "integer"
+                        "description": "Tutor listing created",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Tutor"
+                                }
+                            }
                         }
                     },
-                    {
-                        "name": "per_page",
-                        "in": "query",
-                        "schema": {
-                            "type": "integer"
+                    "400": {
+                        "description": "Validation error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
                         }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Paginated list of users"
-                    },
-                    "401": {
-                        "description": "Unauthorized"
-                    }
-                },
-                "security": [
-                    {
-                        "bearerAuth": []
-                    }
-                ]
-            }
-        },
-        "/users/{id}": {
-            "get": {
-                "summary": "Get a user by ID",
-                "operationId": "3e1085012615dfc5eb5cd0f2e49afc5f",
-                "parameters": [
-                    {
-                        "name": "id",
-                        "in": "path",
-                        "required": true,
-                        "schema": {
-                            "type": "integer"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "User found"
-                    },
-                    "401": {
-                        "description": "Unauthorized"
-                    },
-                    "404": {
-                        "description": "User not found"
                     }
                 },
                 "security": [
@@ -925,5 +1736,492 @@
             }
         }
     },
-    "tags": []
+    "components": {
+        "schemas": {
+            "ErrorResponse": {
+                "properties": {
+                    "error": {
+                        "type": "string",
+                        "example": "Invalid credentials"
+                    }
+                },
+                "type": "object"
+            },
+            "PaginationMeta": {
+                "properties": {
+                    "total": {
+                        "description": "Total number of items",
+                        "type": "integer",
+                        "example": 150
+                    },
+                    "per_page": {
+                        "description": "Items per page",
+                        "type": "integer",
+                        "example": 20
+                    },
+                    "current_page": {
+                        "description": "Current page number",
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "last_page": {
+                        "description": "Last page number",
+                        "type": "integer",
+                        "example": 8
+                    }
+                },
+                "type": "object"
+            },
+            "TokenResponse": {
+                "properties": {
+                    "access_token": {
+                        "type": "string"
+                    },
+                    "token_type": {
+                        "type": "string",
+                        "example": "bearer"
+                    },
+                    "expires_in": {
+                        "type": "integer",
+                        "example": 3600
+                    }
+                },
+                "type": "object"
+            },
+            "LoginRequest": {
+                "required": [
+                    "email",
+                    "password"
+                ],
+                "properties": {
+                    "email": {
+                        "type": "string",
+                        "format": "email"
+                    },
+                    "password": {
+                        "type": "string",
+                        "format": "password"
+                    }
+                },
+                "type": "object"
+            },
+            "HelpRequest": {
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "userEmail": {
+                        "type": "string"
+                    },
+                    "title": {
+                        "type": "string"
+                    },
+                    "module": {
+                        "type": "string"
+                    },
+                    "desc": {
+                        "type": "string"
+                    },
+                    "urgency": {
+                        "type": "string",
+                        "enum": [
+                            "low",
+                            "medium",
+                            "high"
+                        ]
+                    },
+                    "contactEmail": {
+                        "type": "string",
+                        "format": "email"
+                    },
+                    "hasBounty": {
+                        "type": "boolean"
+                    },
+                    "bountyAmount": {
+                        "type": "number"
+                    },
+                    "status": {
+                        "type": "string"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "type": "object"
+            },
+            "HelpRequestResponse": {
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "help_request_id": {
+                        "type": "integer"
+                    },
+                    "user_id": {
+                        "type": "integer"
+                    },
+                    "content": {
+                        "type": "string"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "author": {
+                        "properties": {
+                            "id": {
+                                "type": "integer"
+                            },
+                            "email": {
+                                "type": "string"
+                            }
+                        },
+                        "type": "object"
+                    }
+                },
+                "type": "object"
+            },
+            "Module": {
+                "required": [
+                    "code",
+                    "name"
+                ],
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "code": {
+                        "type": "string",
+                        "example": "CS101"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "description": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "faculty": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "credits": {
+                        "type": "integer",
+                        "maximum": 20,
+                        "minimum": 1
+                    },
+                    "semesters": {
+                        "type": "array",
+                        "items": {
+                            "type": "integer",
+                            "maximum": 3,
+                            "minimum": 1
+                        }
+                    },
+                    "prereqs": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "type": "object"
+            },
+            "ReportedReviews": {
+                "properties": {
+                    "data": {
+                        "type": "array",
+                        "items": {
+                            "properties": {
+                                "id": {
+                                    "description": "Review ID",
+                                    "type": "integer"
+                                },
+                                "module_code": {
+                                    "type": "string"
+                                },
+                                "title": {
+                                    "type": "string"
+                                },
+                                "author": {
+                                    "type": "string"
+                                },
+                                "report_count": {
+                                    "type": "integer"
+                                }
+                            },
+                            "type": "object"
+                        }
+                    },
+                    "meta": {
+                        "$ref": "#/components/schemas/PaginationMeta"
+                    }
+                },
+                "type": "object"
+            },
+            "Review": {
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "module_code": {
+                        "type": "string"
+                    },
+                    "author": {
+                        "description": "Shortname of author",
+                        "type": "string"
+                    },
+                    "rating": {
+                        "type": "integer",
+                        "maximum": 5,
+                        "minimum": 1
+                    },
+                    "upvotes": {
+                        "type": "integer"
+                    },
+                    "downvotes": {
+                        "type": "integer"
+                    },
+                    "comments": {
+                        "type": "array",
+                        "items": {
+                            "properties": {
+                                "a": {
+                                    "description": "Author shortname",
+                                    "type": "string"
+                                },
+                                "t": {
+                                    "description": "Text content",
+                                    "type": "string"
+                                },
+                                "time": {
+                                    "type": "string",
+                                    "format": "date-time"
+                                }
+                            },
+                            "type": "object"
+                        }
+                    },
+                    "voters": {
+                        "description": "Map of userId => voteType",
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "string",
+                            "enum": [
+                                "up",
+                                "down"
+                            ]
+                        }
+                    },
+                    "reportedBy": {
+                        "type": "array",
+                        "items": {
+                            "type": "integer"
+                        }
+                    },
+                    "user_vote": {
+                        "type": "string",
+                        "nullable": true,
+                        "enum": [
+                            "up",
+                            "down"
+                        ]
+                    },
+                    "reported": {
+                        "type": "boolean"
+                    }
+                },
+                "type": "object"
+            },
+            "ReviewComment": {
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "review_id": {
+                        "type": "integer"
+                    },
+                    "text": {
+                        "type": "string"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "author": {
+                        "properties": {
+                            "id": {
+                                "type": "integer"
+                            },
+                            "email": {
+                                "type": "string"
+                            }
+                        },
+                        "type": "object"
+                    }
+                },
+                "type": "object"
+            },
+            "StudyGroup": {
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "user_id": {
+                        "type": "integer"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "module_code": {
+                        "type": "string"
+                    },
+                    "description": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "meeting_time": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "location": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "type": "object"
+            },
+            "Tutor": {
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "user_email": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "modules": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "rate": {
+                        "type": "number",
+                        "format": "float"
+                    },
+                    "contact_email": {
+                        "type": "string",
+                        "format": "email"
+                    },
+                    "bio": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "type": "object"
+            },
+            "User": {
+                "properties": {
+                    "id": {
+                        "description": "User ID",
+                        "type": "integer"
+                    },
+                    "email": {
+                        "type": "string"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "role": {
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            }
+        },
+        "responses": {
+            "Forbidden": {
+                "description": "Access denied",
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "NotFound": {
+                "description": "Resource not found",
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "ValidationError": {
+                "description": "The provided data was invalid.",
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "securitySchemes": {
+            "bearerAuth": {
+                "type": "http",
+                "description": "Enter your JWT access token",
+                "bearerFormat": "JWT",
+                "scheme": "bearer"
+            }
+        }
+    },
+    "tags": [
+        {
+            "name": "Admin",
+            "description": "Administrative operations (admin role required)"
+        },
+        {
+            "name": "Authentication",
+            "description": "User authentication and registration endpoints"
+        },
+        {
+            "name": "Help Requests",
+            "description": "Academic help request system"
+        },
+        {
+            "name": "Modules",
+            "description": "Module information and management"
+        },
+        {
+            "name": "Reviews",
+            "description": "Module review operations"
+        },
+        {
+            "name": "Study Groups",
+            "description": "Study group operations"
+        },
+        {
+            "name": "Tutors",
+            "description": "Tutor listings and management"
+        }
+    ]
 }

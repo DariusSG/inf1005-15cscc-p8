@@ -4,8 +4,21 @@ namespace App\Repositories;
 
 use App\Models\User;
 
-class UserRepository
+use OpenApi\Attributes as OA;
+
+#[OA\Schema(
+    schema: 'User',
+    type: 'object',
+    properties: [
+        new OA\Property(property: "id", type: "integer", description: "User ID"),
+        new OA\Property(property: "email", type: "string"),
+        new OA\Property(property: "name", type: "string"),
+        new OA\Property(property: "role", type: "string")
+    ]
+)]
+class UserRepository extends BaseRepository
 {
+
     public static function findByEmail(string $email): ?User
     {
         return User::select('id', 'email', 'name', 'password', 'role')
@@ -32,8 +45,21 @@ class UserRepository
         ]);
     }
 
-    public static function all(): array
+    public static function paginate(int $perPage = 20, int $page = 1): array
     {
-        return User::select('id', 'email', 'name', 'role')->get()->toArray();
+        $paginator = User::select('id', 'email', 'name', 'role')
+            ->latest()
+            ->paginate($perPage, ['*'], 'page', $page);
+
+        $users = collect($paginator->items())->toArray();
+
+        return [
+            'data' => $users,
+            'meta' => self::buildPaginationMeta(
+                $paginator->total(),
+                $perPage,
+                $page
+            ),
+        ];
     }
 }

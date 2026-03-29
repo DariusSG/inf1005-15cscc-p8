@@ -3,7 +3,7 @@
          xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
          bootstrap="tests/bootstrap.php"
          colors="true"
-         stopOnFailure="false">
+>
 
     <testsuites>
         <testsuite name="Unit">
@@ -13,11 +13,5 @@
             <directory>tests/Integration</directory>
         </testsuite>
     </testsuites>
-
-    <coverage>
-        <include>
-            <directory suffix=".php">app/</directory>
-        </include>
-    </coverage>
 
 </phpunit>

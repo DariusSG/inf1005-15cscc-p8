@@ -5,6 +5,10 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Model;
 
+/**
+ * @method static create(array $data)
+ * @method static withCount(string $string)
+ */
 class Review extends Model
 {
     protected $table = 'reviews';

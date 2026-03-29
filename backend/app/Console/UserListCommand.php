@@ -9,7 +9,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Helper\Table;
 
-#[AsCommand(name: 'app:user:list', description: 'List all users')]
+#[AsCommand(name: 'user:list', description: 'List all users')]
 class UserListCommand extends Command
 {
     protected static $defaultName = 'app:user:list';

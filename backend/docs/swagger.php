@@ -4,7 +4,7 @@ require __DIR__ . '/../vendor/autoload.php';
 use OpenApi\Generator;
 
 // Scan the `app/Controllers` folder
-$openapi = (new Generator())->generate([__DIR__ . '/../app/Controllers']);
+$openapi = (new Generator())->generate([__DIR__ . '/../app']);
 
 $openapi->servers = [
     ['url' => '/api/v1']

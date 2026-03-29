@@ -8,26 +8,63 @@ use App\Core\Response;
 use App\Middleware\JwtMiddleware;
 use App\Repositories\ReviewRepository;
 use App\Repositories\ModuleRepository;
+use OpenApi\Attributes as OA;
 
+
+#[OA\Tag(
+    name: 'Reviews',
+    description: 'Module review operations'
+)]
+#[OA\Response(
+    response: "ValidationError",
+    description: "The provided data was invalid.",
+    content: new OA\JsonContent(ref: "#/components/schemas/ErrorResponse")
+)]
 class ReviewController
 {
-    /**
-     * @OA\Get(path="/reviews", summary="List reviews",
-     *   security={{"bearerAuth":{}}},
-     *   @OA\Parameter(name="page", in="query", @OA\Schema(type="integer")),
-     *   @OA\Parameter(name="per_page", in="query", @OA\Schema(type="integer")),
-     *   @OA\Parameter(name="module_code", in="query", @OA\Schema(type="string")),
-     *   @OA\Parameter(name="search", in="query", @OA\Schema(type="string")),
-     *   @OA\Response(response=200, description="Paginated list of reviews")
-     * )
-     */
-    public function index()
+    #[OA\Get(
+        path: "/reviews",
+        summary: "List reviews (paginated, filtered)",
+        tags: ["Reviews"],
+        security: [["bearerAuth" => []]],
+        parameters: [
+            new OA\Parameter(
+                parameter: "QueryPage",
+                name: "page",
+                in: "query",
+                required: false,
+                schema: new OA\Schema(type: "integer", minimum: 1, default: 1)
+            ),
+            new OA\Parameter(
+                parameter: "QueryPerPage",
+                name: "per_page",
+                in: "query",
+                required: false,
+                schema: new OA\Schema(type: "integer", minimum: 1, maximum: 100, default: 20)
+            ),
+            new OA\Parameter(name: "module_code", in: "query", schema: new OA\Schema(type: "string")),
+            new OA\Parameter(name: "search", in: "query", schema: new OA\Schema(type: "string"))
+        ],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "Success",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "data", type: "array", items: new OA\Items(ref: "#/components/schemas/Review")),
+                        new OA\Property(property: "meta", ref: "#/components/schemas/PaginationMeta")
+                    ]
+                )
+            )
+        ]
+    )]
+    public function index($search, $moduleCode, int $page = 1, int $perPage = 20)
     {
         $userId = JwtMiddleware::userId() ?? 0;
-        $page = max(1, (int) ($_GET['page'] ?? 1));
-        $perPage = min(100, max(1, (int) ($_GET['per_page'] ?? 20)));
-        $moduleCode = $_GET['module_code'] ?? null;
-        $search = Validators::search($_GET['search'] ?? null);
+        $page = max(1, $page);
+        $perPage = min(100, max(1, $perPage));
+        $moduleCode = $moduleCode ?? null;
+        $search = Validators::search($search ?? null);
 
         $result = ReviewRepository::paginate([
             'user_id' => $userId,
@@ -41,25 +78,31 @@ class ReviewController
         ]);
     }
 
-    /**
-     * @OA\Post(path="/reviews", summary="Create a review",
-     *   security={{"bearerAuth":{}}},
-     *   @OA\RequestBody(@OA\MediaType(mediaType="application/json",
-     *     @OA\Schema(required={"module_code","rating","title","content"},
-     *       @OA\Property(property="module_code", type="string"),
-     *       @OA\Property(property="rating", type="integer"),
-     *       @OA\Property(property="title", type="string"),
-     *       @OA\Property(property="content", type="string"),
-     *       @OA\Property(property="workload", type="string"),
-     *       @OA\Property(property="difficulty", type="string"),
-     *       @OA\Property(property="usefulness", type="string")
-     *     )
-     *   )),
-     *   @OA\Response(response=201, description="Review created"),
-     *   @OA\Response(response=400, description="Validation error"),
-     *   @OA\Response(response=403, description="Forbidden")
-     * )
-     */
+    #[OA\Post(
+        path: "/reviews",
+        summary: "Create a new review",
+        tags: ["Reviews"],
+        security: [["bearerAuth" => []]],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                required: ["module_code", "rating", "title", "content"],
+                properties: [
+                    new OA\Property(property: "module_code", type: "string"),
+                    new OA\Property(property: "rating", type: "integer", minimum: 1, maximum: 5),
+                    new OA\Property(property: "title", type: "string"),
+                    new OA\Property(property: "content", type: "string"),
+                    new OA\Property(property: "workload", type: "string"),
+                    new OA\Property(property: "difficulty", type: "string"),
+                    new OA\Property(property: "usefulness", type: "string")
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(response: 201, description: "Created", content: new OA\JsonContent(ref: "#/components/schemas/Review")),
+            new OA\Response(response: 403, description: "Admins cannot write reviews", content: new OA\JsonContent(ref: "#/components/schemas/ErrorResponse"))
+        ]
+    )]
     public function store()
     {
         $userId = JwtMiddleware::userId();
@@ -76,16 +119,13 @@ class ReviewController
                 Response::json(['error' => 'Module not found'], 404);
             }
 
+            $rating = Validators::rangeCheck($data['rating'] ?? 0, 1, 5, 'Rating');
+            $title = Validators::stringCheck($data['title'] ?? '', 'Title', 200);
+            $content = Validators::stringCheck($data['content'] ?? '', 'Content', 10000);
 
-            $rating = Validators::rating($data['rating'] ?? 0);
-            $title = Validators::title($data['title'] ?? '');
-            $content = Validators::text($data['content'] ?? '');
-
-
-            $workload = isset($data['workload']) ? Validators::text($data['workload'], 50) : null;
-            $difficulty = isset($data['difficulty']) ? Validators::text($data['difficulty'], 50) : null;
-            $usefulness = isset($data['usefulness']) ? Validators::text($data['usefulness'], 50) : null;
-
+            $workload = isset($data['workload']) ? Validators::stringCheck($data['workload'], 'Content', 50) : null;
+            $difficulty = isset($data['difficulty']) ? Validators::stringCheck($data['difficulty'], 'Content', 50) : null;
+            $usefulness = isset($data['usefulness']) ? Validators::stringCheck($data['usefulness'], 'Content', 50) : null;
 
             $review = ReviewRepository::create([
                 'module_code' => $moduleCode,
@@ -102,18 +142,29 @@ class ReviewController
         } catch (\InvalidArgumentException $e) {
             Response::json(['error' => $e->getMessage()], 400);
         }
-
     }
 
-    /**
-     * @OA\Put(path="/reviews/{id}", summary="Edit own review",
-     *   security={{"bearerAuth":{}}},
-     *   @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
-     *   @OA\Response(response=200, description="Review updated"),
-     *   @OA\Response(response=403, description="Forbidden"),
-     *   @OA\Response(response=404, description="Not found")
-     * )
-     */
+    #[OA\Post(
+        path: "/reviews/{id}",
+        summary: "Edit your own review",
+        tags: ["Reviews"],
+        security: [["bearerAuth" => []]],
+        parameters: [new OA\Parameter(name: "id", in: "path", required: true, schema: new OA\Schema(type: "integer"))],
+        requestBody: new OA\RequestBody(
+            content: new OA\JsonContent(
+                properties: [
+                    new OA\Property(property: "rating", type: "integer", minimum: 1, maximum: 5),
+                    new OA\Property(property: "title", type: "string"),
+                    new OA\Property(property: "content", type: "string")
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(response: 200, description: "Updated", content: new OA\JsonContent(ref: "#/components/schemas/Review")),
+            new OA\Response(response: 403, ref: "#/components/responses/Forbidden"),
+            new OA\Response(response: 404, ref: "#/components/responses/NotFound")
+        ]
+    )]
     public function update(int $id)
     {
         $userId = JwtMiddleware::userId();
@@ -132,22 +183,22 @@ class ReviewController
 
         try {
             $rating     = isset($data['rating'])
-                ? Validators::rating($data['rating'])
+                ? Validators::rangeCheck($data['rating'], 1, 5, 'Rating')
                 : $review->rating;
             $title      = isset($data['title'])
-                ? Validators::title($data['title'])
+                ? Validators::stringCheck($data['title'], 'Title', 200)
                 : $review->title;
             $content    = isset($data['content'])
-                ? Validators::text($data['content'])
+                ? Validators::stringCheck($data['content'], 'Content', 10000)
                 : $review->content;
             $workload   = isset($data['workload'])
-                ? Validators::text($data['workload'], 50)
+                ? Validators::stringCheck($data['workload'], 'Content', 50)
                 : $review->workload;
             $difficulty = isset($data['difficulty'])
-                ? Validators::text($data['difficulty'], 50)
+                ? Validators::stringCheck($data['difficulty'], 'Content', 50)
                 : $review->difficulty;
             $usefulness = isset($data['usefulness'])
-                ? Validators::text($data['usefulness'], 50)
+                ? Validators::stringCheck($data['usefulness'], 'Content', 50)
                 : $review->usefulness;
         } catch (\InvalidArgumentException $e) {
             Response::json(['error' => $e->getMessage()], 400);
@@ -160,19 +211,23 @@ class ReviewController
         Response::json(ReviewRepository::format($updated->load(['author', 'comments']), $userId));
     }
 
-    /**
-     * @OA\Post(path="/reviews/{id}/vote", summary="Toggle upvote/downvote",
-     *   security={{"bearerAuth":{}}},
-     *   @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
-     *   @OA\RequestBody(@OA\MediaType(mediaType="application/json",
-     *     @OA\Schema(required={"type"},
-     *       @OA\Property(property="type", type="string", enum={"up","down"})
-     *     )
-     *   )),
-     *   @OA\Response(response=200, description="Vote toggled"),
-     *   @OA\Response(response=403, description="Forbidden")
-     * )
-     */
+    #[OA\Post(
+        path: "/reviews/{id}/vote",
+        summary: "Toggle upvote/downvote",
+        tags: ["Reviews"],
+        security: [["bearerAuth" => []]],
+        parameters: [new OA\Parameter(name: "id", in: "path", required: true, schema: new OA\Schema(type: "integer"))],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(required: ["type"], properties: [
+                new OA\Property(property: "type", type: "string", enum: ["up", "down"])
+            ])
+        ),
+        responses: [
+            new OA\Response(response: 200, description: "Vote toggled"),
+            new OA\Response(response: 400, ref: "#/components/responses/ValidationError")
+        ]
+    )]
     public function vote(int $id)
     {
         $userId = JwtMiddleware::userId();
@@ -196,16 +251,33 @@ class ReviewController
         Response::json($review);
     }
 
-    /**
-     * @OA\Post(path="/reviews/{id}/report", summary="Toggle report on a review",
-     *   security={{"bearerAuth":{}}},
-     *   @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
-     *   @OA\RequestBody(@OA\MediaType(mediaType="application/json",
-     *     @OA\Schema(@OA\Property(property="reason", type="string"))
-     *   )),
-     *   @OA\Response(response=200, description="Report toggled")
-     * )
-     */
+    #[OA\Post(
+        path: "/reviews/{id}/report",
+        summary: "Toggle report on a review",
+        tags: ["Reviews"],
+        security: [["bearerAuth" => []]],
+        parameters: [
+            new OA\Parameter(name: "id", in: "path", required: true, schema: new OA\Schema(type: "integer"))
+        ],
+        requestBody: new OA\RequestBody(
+            content: new OA\JsonContent(
+                properties: [
+                    new OA\Property(property: "reason", type: "string", example: "Inappropriate content")
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "Report toggled",
+                content: new OA\JsonContent(
+                    properties: [new OA\Property(property: "reported", type: "boolean")]
+                )
+            ),
+            new OA\Response(response: 403, description: "Admins cannot report", content: new OA\JsonContent(ref: "#/components/schemas/ErrorResponse")),
+            new OA\Response(response: 404, ref: "#/components/responses/NotFound")
+        ]
+    )]
     public function report(int $id)
     {
         $userId = JwtMiddleware::userId();
@@ -224,18 +296,33 @@ class ReviewController
         Response::json(['reported' => $isReported]);
     }
 
-    /**
-     * @OA\Post(path="/reviews/{id}/comments", summary="Add a comment to a review",
-     *   security={{"bearerAuth":{}}},
-     *   @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
-     *   @OA\RequestBody(@OA\MediaType(mediaType="application/json",
-     *     @OA\Schema(required={"text"},
-     *       @OA\Property(property="text", type="string")
-     *     )
-     *   )),
-     *   @OA\Response(response=201, description="Comment added")
-     * )
-     */
+    #[OA\Post(
+        path: "/reviews/{id}/comments",
+        summary: "Add a comment to a review",
+        tags: ["Reviews"],
+        security: [["bearerAuth" => []]],
+        parameters: [
+            new OA\Parameter(name: "id", in: "path", required: true, schema: new OA\Schema(type: "integer"))
+        ],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                required: ["text"],
+                properties: [
+                    new OA\Property(property: "text", type: "string", example: "Great review, thanks!")
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(
+                response: 201,
+                description: "Comment added",
+                content: new OA\JsonContent(ref: "#/components/schemas/ReviewComment")
+            ),
+            new OA\Response(response: 400, ref: "#/components/responses/ValidationError"),
+            new OA\Response(response: 404, ref: "#/components/responses/NotFound")
+        ]
+    )]
     public function addComment(int $id)
     {
         $userId = JwtMiddleware::userId();
