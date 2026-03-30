@@ -42,7 +42,7 @@ function AppLayout() {
 export default function App() {
   return (
     // basename="/frontend" matches the Vite base and the /frontend folder on the server
-    <BrowserRouter basename="/frontend">
+    <BrowserRouter>
       <AuthProvider>
         <AppLayout />
         <Toaster
