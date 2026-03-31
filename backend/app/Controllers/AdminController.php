@@ -2,6 +2,7 @@
 
 namespace App\Controllers;
 
+use App\Core\Logger;
 use App\Core\Request;
 use App\Core\Response;
 use App\Core\Validators;
@@ -181,6 +182,7 @@ readonly class AdminController
             $user = $this->userService->getUserById($id);
             Response::json($user);
         } catch (Exception $e) {
+            Logger::channel()->error('Error at AdminController@user_show', ['exception' => $e]);
             Response::json(["error" => $e->getMessage()], 404);
         }
     }
@@ -286,6 +288,7 @@ readonly class AdminController
         } catch (InvalidArgumentException $e) {
             Response::json(['error' => $e->getMessage()], 400);
         } catch (Exception $e) {
+            Logger::channel()->error('Error at AdminController@module_store', ['exception' => $e]);
             Response::json(['error' => 'An unexpected error occurred'], 500);
         }
     }
