@@ -38,7 +38,7 @@ export default function Admin() {
   };
 
   const handleDismiss = async (reportId) => {
-    try { await client.post(`/admin/reported-reviews/${reportId}/dismiss`); toast.info('Report dismissed'); loadReported(); }
+    try { await client.post(`/admin/reviews/report/${reportId}/dismiss`); toast.info('Report dismissed'); loadReported(); }
     catch { toast.error('Failed to dismiss'); }
   };
 

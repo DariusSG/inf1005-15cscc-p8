@@ -15,7 +15,7 @@ export const postReview = (data) =>
   client.post('/reviews', data).then((r) => r.data);
 
 export const putReview = (id, data) =>
-  client.put(`/reviews/${id}`, data).then((r) => r.data);
+  client.post(`/reviews/${id}`, data).then((r) => r.data);
 
 export const postReviewVote = (id, direction) =>
   client.post(`/reviews/${id}/vote`, { direction }).then((r) => r.data);
@@ -58,8 +58,10 @@ export const postStudyGroup = (data) =>
 
 // ── Admin ─────────────────────────────────────────────────
 export const getReportedReviews = (params) =>
-  client.get('/admin/reported-reviews', { params }).then((r) => r.data);
+  client.get('/admin/reviews/report', { params }).then((r) => r.data);
 
+export const adminCreateModule = (data) =>
+    client.post('/admin/modules', data).then((r) => r.data);
 // ── Users ─────────────────────────────────────────────────
 export const getUsers = (params) =>
   client.get('/users', { params }).then((r) => r.data);
