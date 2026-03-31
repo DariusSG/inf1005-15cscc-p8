@@ -15,7 +15,7 @@ abstract class BaseRepository
      * @param int $page
      * @return array{total: int, per_page: int, current_page: int, last_page: int}
      */
-    public function buildPaginationMeta(int $total, int $perPage, int $page): array
+    public static function buildPaginationMeta(int $total, int $perPage, int $page): array
     {
         return [
             'total'        => $total,
@@ -31,7 +31,7 @@ abstract class BaseRepository
      * @param string $search Raw search string.
      * @return string Escaped string wrapped in wildcards.
      */
-    public function escapeSearch(string $search): string
+    public static function escapeSearch(string $search): string
     {
         return '%' . addcslashes($search, '%_') . '%';
     }
