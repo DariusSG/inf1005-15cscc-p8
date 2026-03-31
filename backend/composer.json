@@ -9,7 +9,8 @@
     "nesbot/carbon": "^3.11",
     "phpmailer/phpmailer": "^7.0",
     "symfony/console": "^8.0",
-    "ext-pdo": "*"
+    "ext-pdo": "*",
+    "illuminate/pagination": "^12.56"
   },
   "require-dev": {
     "phpunit/phpunit": "^11.0"

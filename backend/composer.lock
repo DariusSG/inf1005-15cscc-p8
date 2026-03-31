@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "012e3e9383be9479220f6556eff184c5",
+    "content-hash": "efe7ef0b9f9a6d0d7a38d0df92e28448",
     "packages": [
         {
             "name": "brick/math",
@@ -837,6 +837,56 @@
                 "source": "https://github.com/laravel/framework"
             },
             "time": "2024-07-23T16:31:01+00:00"
+        },
+        {
+            "name": "illuminate/pagination",
+            "version": "v12.56.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/illuminate/pagination.git",
+                "reference": "8327d828676654053906a771abf5eea5426354ec"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/illuminate/pagination/zipball/8327d828676654053906a771abf5eea5426354ec",
+                "reference": "8327d828676654053906a771abf5eea5426354ec",
+                "shasum": ""
+            },
+            "require": {
+                "ext-filter": "*",
+                "illuminate/collections": "^12.0",
+                "illuminate/contracts": "^12.0",
+                "illuminate/support": "^12.0",
+                "php": "^8.2"
+            },
+            "type": "library",
+            "extra": {
+                "branch-alias": {
+                    "dev-master": "12.x-dev"
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Illuminate\\Pagination\\": ""
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Taylor Otwell",
+                    "email": "taylor@laravel.com"
+                }
+            ],
+            "description": "The Illuminate Pagination package.",
+            "homepage": "https://laravel.com",
+            "support": {
+                "issues": "https://github.com/laravel/framework/issues",
+                "source": "https://github.com/laravel/framework"
+            },
+            "time": "2026-02-25T15:25:18+00:00"
         },
         {
             "name": "illuminate/reflection",
