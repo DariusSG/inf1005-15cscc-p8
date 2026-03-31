@@ -45,15 +45,15 @@ class Migrator
             }
 
             try {
-                // Wrap in transaction: ensures the 'up' logic and migration log stay in sync
-                Capsule::connection()->transaction(function () use ($className, &$ran) {
-                    new $className()->up();
-                    Capsule::table('migrations')->insert([
-                        'migration' => $className,
-                        'created_at' => date('Y-m-d H:i:s')
-                    ]);
-                    $ran[] = $className;
-                });
+                // no transaction as mysql does not support DDL transactions
+                new $className()->up();
+
+                Capsule::table('migrations')->insert([
+                    'migration' => $className,
+                    'created_at' => date('Y-m-d H:i:s')
+                ]);
+
+                $ran[] = $className;
                 $log("Ran: $className");
             } catch (Throwable $e) {
                 $errors[] = "$className: " . $e->getMessage();
@@ -65,7 +65,7 @@ class Migrator
         // Finalize First Boot
         if ($isFirstBoot && empty($errors)) {
             self::seedAdmin($log);
-            Helpers::writeConfig('app', 'installed', true);
+            Helpers::writeConfig('app.installed', true);
             $log('Application marked as installed.');
         }
 
