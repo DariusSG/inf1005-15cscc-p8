@@ -6,6 +6,7 @@ class Request
 {
     protected static array $context = [];
     protected static ?array $cachedBody = null;
+    protected static ?array $cachedQuery = null;
 
     public static function body(): array
     {
@@ -17,6 +18,19 @@ class Request
         self::$cachedBody = json_decode($input, true) ?? [];
 
         return self::$cachedBody;
+    }
+
+    public static function query(string $key, mixed $default = null): mixed
+    {
+        if (self::$cachedQuery === null) {
+            parse_str($_SERVER['QUERY_STRING'] ?? '', self::$cachedQuery);
+        }
+
+        if ($key === null) {
+            return self::$cachedQuery;
+        }
+
+        return self::$cachedQuery[$key] ?? $default;
     }
 
     public static function method(): string

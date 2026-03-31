@@ -92,10 +92,10 @@ readonly class AdminController
             new OA\Response(response: 401, description: "Unauthorized")
         ]
     )]
-    public function reportedReviews_show(int $page = 1, int $perPage = 20): void
+    public function reportedReviews_show(): void
     {
-        $page    = max(1, $page);
-        $perPage = min(100, max(1, $perPage));
+        $page    = max(1, Request::query('page', 1));
+        $perPage = min(100, max(1, Request::query('per_page', 20)));
 
         $result = ReviewRepository::reportedReviewsPaginated($perPage, $page);
 
@@ -140,10 +140,10 @@ readonly class AdminController
             new OA\Response(response: 401, description: "Unauthorized")
         ]
     )]
-    public function user_index(int $page = 1, int $perPage = 20): void
+    public function user_index(): void
     {
-        $page    = max(1, $page);
-        $perPage = min(100, max(1, $perPage));
+        $page    = max(1, Request::query('page', 1));
+        $perPage = min(100, max(1, Request::query('per_page', 20)));
 
         $result  = UserRepository::paginate($page, $perPage);
 

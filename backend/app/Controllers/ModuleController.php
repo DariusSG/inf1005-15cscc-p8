@@ -51,10 +51,10 @@ class ModuleController
             )
         ]
     )]
-    public function index(int $page = 1, int $perPage = 20)
+    public function index()
     {
-        $page    = max(1, $page);
-        $perPage = min(100, max(1, $perPage));
+        $page = max(1, Request::query('page', 1));
+        $perPage = min(100, max(1, Request::query('per_page', 20)));
         $result  = ModuleRepository::paginate($page, $perPage);
 
         Response::json([

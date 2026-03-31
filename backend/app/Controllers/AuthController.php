@@ -100,7 +100,7 @@ class AuthController
     )]
     public function checkVerifyToken(): void
     {
-        $token = trim($_GET['token'] ?? '');
+        $token = trim(Request::query('token', ''));
 
         if (!$token) {
             Response::json(['error' => 'token is required'], 400);
@@ -219,7 +219,7 @@ class AuthController
     )]
     public function verifyPasswordResetToken(): void
     {
-        $token = trim($_GET['token'] ?? '');
+        $token = trim(Request::query('token', ''));
         if (!$token) {
             Response::json(['error' => 'token is required'], 400);
         }

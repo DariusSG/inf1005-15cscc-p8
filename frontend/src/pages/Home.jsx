@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { getModules } from '../api/index';
 import { getHelpRequests } from '../api/index';
 import { getTutors } from '../api/index';

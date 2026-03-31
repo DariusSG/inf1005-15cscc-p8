@@ -1,4 +1,4 @@
-import { useNavigate, useRouteError } from 'react-router-dom';
+import { useNavigate, useRouteError } from 'react-router';
 
 //for 404
 export function NotFound() {

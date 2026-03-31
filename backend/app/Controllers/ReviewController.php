@@ -58,13 +58,13 @@ class ReviewController
             )
         ]
     )]
-    public function index($search, $moduleCode, int $page = 1, int $perPage = 20)
+    public function index()
     {
         $userId = JwtMiddleware::userId() ?? 0;
-        $page = max(1, $page);
-        $perPage = min(100, max(1, $perPage));
-        $moduleCode = $moduleCode ?? null;
-        $search = Validators::search($search ?? null);
+        $page = max(1, Request::query('page', 1));
+        $perPage = min(100, max(1, Request::query('per_page', 20)));
+        $moduleCode = Request::query('module_code', null);
+        $search = Validators::search(Request::query('search', null));
 
         $result = ReviewRepository::paginate([
             'user_id' => $userId,

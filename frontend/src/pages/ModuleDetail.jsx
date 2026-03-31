@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router';
 import { getModule, postReview, putReview, postReviewVote, postReviewReport, postReviewComment } from '../api/index';
 import { useAuth } from '../context/AuthContext';
 import { sanitiseField, sanitiseRating, sanitiseSlider, requireField } from '../utils/sanitise';
