@@ -58,7 +58,7 @@ export default function Admin() {
 
     setCreating(true);
     try {
-      await client.post('/modules', {
+      await client.post('/admin/modules', {
         code: cleanCode,
         name: cleanName,
         faculty: cleanFac,

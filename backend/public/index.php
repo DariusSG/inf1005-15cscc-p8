@@ -44,7 +44,7 @@ $router->prefix('/api/v1', function ($router) {
         $router->get('/admin/users',            'AdminController@user_index');
         $router->get('/admin/users/{id}',       'AdminController@user_show');
         $router->get('/admin/reported-reviews', 'AdminController@reportedReviews_show');
-        $router->post('/admin/modules',               'ModuleController@store');
+        $router->post('/admin/modules',         'AdminController@module_store');
     });
 
     // --- General Authenticated Section ---

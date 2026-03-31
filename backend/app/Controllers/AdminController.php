@@ -206,7 +206,7 @@ readonly class AdminController
             new OA\Response(response: 409, description: "Module already exists")
         ]
     )]
-    public function store(): void
+    public function module_store(): void
     {
         $data = Request::body() ?? [];
 
