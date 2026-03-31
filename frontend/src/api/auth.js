@@ -20,3 +20,15 @@ export const postRefresh = () =>
 
 export const postLogout = () =>
   client.post('/auth/logout').then((r) => r.data);
+
+export const postForgotPassword = (email) =>
+    client.post('/auth/password/forgot', { email }).then((r) => r.data);
+
+export const getPasswordVerify = (token) =>
+    client.get('/auth/password/verify', { params: { token } }).then((r) => r.data);
+
+export const postResetPassword = (token, password) =>
+    client.post('/auth/password/reset', { token, password }).then((r) => r.data);
+
+export const postChangePassword = (currentPassword, newPassword) =>
+    client.post('/auth/password/change', { currentPassword, newPassword }).then((r) => r.data);
