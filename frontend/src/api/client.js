@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const BASE_URL = 'https://sitizens.dariussg.dev';
+const BASE_URL = 'https://sitizens.dariussg.dev/api/v1';
 
 const client = axios.create({
   baseURL: BASE_URL,
