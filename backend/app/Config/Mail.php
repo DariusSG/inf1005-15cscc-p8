@@ -28,4 +28,9 @@ class Mail
     {
         return (int) Helpers::config('mail.verify_ttl', 86400);
     }
+
+    public static function resetTtl(): int
+    {
+        return (int) Helpers::config('mail.reset_ttl', 3600);
+    }
 }

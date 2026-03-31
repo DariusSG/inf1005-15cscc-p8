@@ -167,6 +167,112 @@ class AuthController
     }
 
     #[OA\Post(
+        path: "/auth/password/forgot",
+        summary: "Request a password reset email",
+        tags: ["Authentication"],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                required: ["email"],
+                properties: [
+                    new OA\Property(property: "email", type: "string", format: "email")
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(response: 200, description: "If the account exists, a reset email is sent"),
+            new OA\Response(response: 400, description: "Validation error", content: new OA\JsonContent(ref: "#/components/schemas/ErrorResponse"))
+        ]
+    )]
+    public function forgotPassword(): void
+    {
+        $data  = Request::body();
+        $email = trim($data['email'] ?? '');
+
+        if (!$email) {
+            Response::json(['error' => 'email is required'], 400);
+        }
+
+        try {
+            $this->authService->requestPasswordReset($email);
+            Response::json([
+                'message' => 'If that email exists, a password reset link has been sent.'
+            ]);
+        } catch (InvalidArgumentException $e) {
+            Response::json(['error' => $e->getMessage()], 400);
+        } catch (Exception $e) {
+            Response::json(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    #[OA\Get(
+        path: "/auth/password/verify",
+        summary: "Verify a password reset token",
+        tags: ["Authentication"],
+        parameters: [
+            new OA\Parameter(name: "token", in: "query", required: true, schema: new OA\Schema(type: "string"))
+        ],
+        responses: [
+            new OA\Response(response: 200, description: "Token is valid"),
+            new OA\Response(response: 400, description: "Invalid token", content: new OA\JsonContent(ref: "#/components/schemas/ErrorResponse"))
+        ]
+    )]
+    public function verifyPasswordResetToken(): void
+    {
+        $token = trim($_GET['token'] ?? '');
+        if (!$token) {
+            Response::json(['error' => 'token is required'], 400);
+        }
+
+        try {
+            $email = $this->authService->verifyPasswordResetToken($token);
+            Response::json([
+                'email' => $this->maskEmail($email),
+                'message' => 'Token is valid'
+            ]);
+        } catch (RuntimeException $e) {
+            Response::json(['error' => $e->getMessage()], 400);
+        }
+    }
+
+    #[OA\Post(
+        path: "/auth/password/reset",
+        summary: "Reset password using a reset token",
+        tags: ["Authentication"],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                required: ["token", "password"],
+                properties: [
+                    new OA\Property(property: "token", type: "string"),
+                    new OA\Property(property: "password", type: "string", format: "password", minLength: 8)
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(response: 200, description: "Password reset successful"),
+            new OA\Response(response: 400, description: "Validation error", content: new OA\JsonContent(ref: "#/components/schemas/ErrorResponse"))
+        ]
+    )]
+    public function resetPassword(): void
+    {
+        $data = Request::body();
+        $token = trim($data['token'] ?? '');
+        $password = (string)($data['password'] ?? '');
+
+        if (!$token || !$password) {
+            Response::json(['error' => 'token and password are required'], 400);
+        }
+
+        try {
+            $this->authService->completePasswordReset($token, $password);
+            Response::json(['message' => 'Password reset successful.']);
+        } catch (InvalidArgumentException|RuntimeException $e) {
+            Response::json(['error' => $e->getMessage()], 400);
+        }
+    }
+
+    #[OA\Post(
         path: "/auth/login",
         summary: "Login",
         tags: ["Authentication"],
@@ -319,6 +425,51 @@ class AuthController
             Response::json($result);
         } catch (\Exception $e) {
             Response::json(['error' => $e->getMessage()], 401);
+        }
+    }
+
+    #[OA\Post(
+        path: "/auth/password/change",
+        summary: "Change password for the authenticated user",
+        tags: ["Authentication"],
+        security: [["bearerAuth" => []]],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                required: ["current_password", "new_password"],
+                properties: [
+                    new OA\Property(property: "current_password", type: "string", format: "password"),
+                    new OA\Property(property: "new_password", type: "string", format: "password", minLength: 8)
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(response: 200, description: "Password changed successfully"),
+            new OA\Response(response: 400, description: "Validation error", content: new OA\JsonContent(ref: "#/components/schemas/ErrorResponse")),
+            new OA\Response(response: 401, description: "Unauthorized", content: new OA\JsonContent(ref: "#/components/schemas/ErrorResponse"))
+        ]
+    )]
+    public function changePassword(): void
+    {
+        $userId = JwtMiddleware::userId();
+        if (!$userId) {
+            Response::json(['error' => 'Unauthorized'], 401);
+        }
+
+        $data = Request::body();
+        $currentPassword = (string)($data['current_password'] ?? '');
+        $newPassword = (string)($data['new_password'] ?? '');
+
+        if (!$currentPassword || !$newPassword) {
+            Response::json(['error' => 'current_password and new_password are required'], 400);
+        }
+
+        try {
+            $this->authService->changePassword((int)$userId, $currentPassword, $newPassword);
+            Cookie::delete('refresh_token');
+            Response::json(['message' => 'Password changed successfully. Please sign in again.']);
+        } catch (InvalidArgumentException|RuntimeException $e) {
+            Response::json(['error' => $e->getMessage()], 400);
         }
     }
 

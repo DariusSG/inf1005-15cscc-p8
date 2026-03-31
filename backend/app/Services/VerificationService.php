@@ -58,6 +58,12 @@ class VerificationService
         $this->mailer->sendVerificationEmail($email, $rawToken);
     }
 
+    public function sendPasswordReset(string $email, string $rawToken): void
+    {
+        $this->assertSitEmail($email);
+        $this->mailer->sendPasswordResetEmail($email, $rawToken);
+    }
+
     /**
      * Look up a raw token. Returns the verified email on success.
      * Throws on invalid / expired / already-used token.

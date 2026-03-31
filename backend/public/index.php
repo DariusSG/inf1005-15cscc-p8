@@ -35,6 +35,9 @@ $router->prefix('/api/v1', function ($router) {
     $router->post('/auth/register/request',  'AuthController@requestRegistration');
     $router->get('/auth/register/verify',    'AuthController@checkVerifyToken');
     $router->post('/auth/register/complete', 'AuthController@completeRegistration');
+    $router->post('/auth/password/forgot',   'AuthController@forgotPassword');
+    $router->get('/auth/password/verify',    'AuthController@verifyPasswordResetToken');
+    $router->post('/auth/password/reset',    'AuthController@resetPassword');
 
     // --- Admin Only Section ---
     $router->middleware(['JwtMiddleware:admin'], function ($router) {
@@ -48,6 +51,7 @@ $router->prefix('/api/v1', function ($router) {
     $router->middleware(['JwtMiddleware'], function ($router) {
         $router->get('/auth/me',      'AuthController@me');
         $router->post('/auth/logout', 'AuthController@logout');
+        $router->post('/auth/password/change', 'AuthController@changePassword');
 
         // Modules
         $router->get('/modules',        'ModuleController@index');

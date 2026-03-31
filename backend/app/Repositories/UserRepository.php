@@ -31,6 +31,11 @@ class UserRepository extends BaseRepository
         return User::select('id', 'email', 'name', 'role')->find($id);
     }
 
+    public static function findByIdWithPassword(int $id): ?User
+    {
+        return User::select('id', 'email', 'name', 'password', 'role')->find($id);
+    }
+
     public static function create(
         string $email,
         string $password,

@@ -256,4 +256,10 @@ class TokenService
         Session::where('refresh_jti', $refreshJti)
             ->update(['revoked' => true]);
     }
+
+    public function revokeAllTokensForUser(int $userId): void
+    {
+        RefreshToken::where('user_id', $userId)->update(['revoked' => true]);
+        Session::where('user_id', $userId)->update(['revoked' => true]);
+    }
 }
