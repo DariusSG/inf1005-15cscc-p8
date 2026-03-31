@@ -31,6 +31,10 @@ function AppLayout() {
             <Route path="/help" element={<Help />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/admin" element={<Admin />} />
+            <Route path="*" element={<NotFound />} />
+            <Route path="/modules" element={<Modules />} errorElement={<ErrorBoundaryPage />} />
+
+
           </Routes>
         </div>
       </div>
