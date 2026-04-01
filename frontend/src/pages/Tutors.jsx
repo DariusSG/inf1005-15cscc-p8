@@ -7,6 +7,7 @@ import Modal from '../components/Modal';
 import toast from 'react-hot-toast';
 
 const ALLOWED_RATES = ['$15/hr', '$20/hr', '$25/hr', '$30/hr', 'Free'];
+const RATE_TO_NUM = { '$15/hr': 15, '$20/hr': 20, '$25/hr': 25, '$30/hr': 30, 'Free': 0 };
 
 function ContactModal({ tutor, onClose }) {
   return (
@@ -36,6 +37,7 @@ function ContactModal({ tutor, onClose }) {
 
 function OfferTutorModal({ onClose, onSaved }) {
   const { user } = useAuth();
+  const userName = user?.name || '';
   const [modules, setModules] = useState([]);
   const [selectedMods, setSelectedMods] = useState([]);
   const [rate, setRate] = useState('$20/hr');
@@ -67,10 +69,11 @@ function OfferTutorModal({ onClose, onSaved }) {
     setLoading(true);
     try {
       await postTutor({
-        modules: cleanMods,
-        rate: cleanRate,
+        name: userName,
+        module_codes: cleanMods,
+        rate: RATE_TO_NUM[cleanRate] ?? 0,
         bio: cleanBio,
-        contactEmail: cleanHandle + '@sit.singaporetech.edu.sg',
+        contact_email: cleanHandle + '@sit.singaporetech.edu.sg',
       });
       toast.success('Listing published!');
       onSaved();
