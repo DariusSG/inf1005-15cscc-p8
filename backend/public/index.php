@@ -50,10 +50,11 @@ $router->prefix('/api/v1', function ($router) {
 
     // --- Admin Only Section ---
     $router->middleware(['JwtMiddleware:admin'], function ($router) {
-        $router->get('/admin/users',            'AdminController@user_index');
-        $router->get('/admin/users/{id}',       'AdminController@user_show');
-        $router->get('/admin/reviews/report', 'AdminController@reportedReviews_show');
-        $router->post('/admin/modules',         'AdminController@module_store');
+        $router->get('/admin/users',             'AdminController@user_index');
+        $router->get('/admin/users/{id}',        'AdminController@user_show');
+        $router->get('/admin/reviews/report',    'AdminController@reportedReviews_show');
+        $router->delete('/admin/reviews/report', 'AdminController@reportedReviews_delete');
+        $router->post('/admin/modules',          'AdminController@module_store');
     });
 
     // --- General Authenticated Section ---

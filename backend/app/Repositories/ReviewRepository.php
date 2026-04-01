@@ -15,17 +15,12 @@ use OpenApi\Attributes as OA;
     schema: 'ReportedReviews',
     type: 'object',
     properties: [
-        new OA\Property(
-            property: "data", type: "array",
-            items: new OA\Items(properties: [
-                new OA\Property(property: "id", type: "integer", description: "Review ID"),
-                new OA\Property(property: "module_code", type: "string"),
-                new OA\Property(property: "title", type: "string"),
-                new OA\Property(property: "author", type: "string"),
-                new OA\Property(property: "report_count", type: "integer")
-            ])
-        ),
-        new OA\Property(property: "meta", ref: "#/components/schemas/PaginationMeta")
+        new OA\Property(property: "id", type: "integer", description: "Review ID"),
+        new OA\Property(property: "module_code", type: "string"),
+        new OA\Property(property: "title", type: "string"),
+        new OA\Property(property: "author", type: "string"),
+        new OA\Property(property: "report_count", type: "integer"),
+        new OA\Property(property: "users", type: "array", items: new OA\Items(type: "integer"))
     ]
 )]
 #[OA\Schema(
@@ -183,12 +178,23 @@ class ReviewRepository extends BaseRepository
         $existing = ReviewReport::where('review_id', $reviewId)->where('user_id', $userId)->first();
 
         if ($existing) {
-            $existing->delete();
-            return false;
+            return true; // Already reported
         }
 
         ReviewReport::create(['review_id' => $reviewId, 'user_id' => $userId, 'reason' => $reason]);
         return true;
+    }
+
+    public static function removeReport(int $reviewId, int $userId): bool
+    {
+        $existing = ReviewReport::where('review_id', $reviewId)->where('user_id', $userId)->first();
+
+        if ($existing) {
+            $existing->delete();
+            return true;   
+        }
+
+        return false;
     }
 
     public static function addComment(int $reviewId, int $userId, string $text): ReviewComment
@@ -235,6 +241,7 @@ class ReviewRepository extends BaseRepository
                 'title'        => $r->title,
                 'author'       => $r->author?->email,
                 'report_count' => $r->reports_count,
+                'users'        => $r->reports->pluck('user_id')->values()->all(),
             ])
             ->all();
 

@@ -105,6 +105,51 @@ readonly class AdminController
         ]);
     }
 
+    #[OA\Delete(
+        path: "/admin/reviews/report",
+        summary: "Delete a reported review",
+        tags: ["Admin"], security: [["bearerAuth" => []]], 
+        parameters: [
+            new OA\Parameter(
+                parameter: "ReviewId",
+                name: "review_id",
+                in: "query",
+                required: true,
+                schema: new OA\Schema(type: "integer", description: "Review ID")
+            ),
+            new OA\Parameter(
+                parameter: "UserId",
+                name: "user_id",
+                in: "query",
+                required: true,
+                schema: new OA\Schema(type: "integer", description: "User ID")
+            )
+        ],
+        responses: [
+            new OA\Response(response: 200, description: "Success"),
+            new OA\Response(response: 500, description: "Internal Server Error"),
+            new OA\Response(response: 401, description: "Unauthorized")
+        ]
+    )]
+    public function reportedReviews_delete(): void
+    {
+        $reviewId = Request::query('review_id');
+        $userId = Request::query('user_id');
+
+        if (!$reviewId || !$userId) {
+            Response::json(['error' => 'review_id and user_id are required'], 400);
+            return;
+        }
+
+        try {
+            ReviewRepository::removeReport((int)$reviewId, (int)$userId);
+            Response::json(['message' => 'Action completed successfully']);
+        } catch (Exception $e) {
+            Logger::channel()->error('Error at AdminController@reportReviews_delete', ['exception' => $e]);
+            Response::json(['error' => 'An unexpected error occurred'], 500);
+        }
+    }
+
 
     #[OA\Get(
         path: "/admin/users",
