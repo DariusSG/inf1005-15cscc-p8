@@ -40,7 +40,7 @@ class MailService
      */
     public function sendVerificationEmail(string $toEmail, string $token): void
     {
-        $link = Mail::appUrl() . '/register/verify?token=' . urlencode($token);
+        $link = Mail::appUrl() . '/register/complete?token=' . urlencode($token);
         $ttlH = Mail::verifyTtl() / 3600;
 
         $html = $this->verificationTemplate($toEmail, $link, $ttlH);
