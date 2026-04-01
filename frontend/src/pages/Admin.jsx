@@ -32,14 +32,18 @@ export default function Admin() {
 
   useEffect(() => { if (isAdmin) loadReported(); }, [isAdmin]);
 
-  const handleRemoveReview = async (reviewId) => {
-    try { await client.delete(`/reviews/${reviewId}`); toast.success('Review removed'); loadReported(); }
-    catch { toast.error('Failed to remove'); }
-  };
-
-  const handleDismiss = async (reportId) => {
-    try { await client.post(`/admin/reviews/report/${reportId}/dismiss`); toast.info('Report dismissed'); loadReported(); }
-    catch { toast.error('Failed to dismiss'); }
+  const handleDismissReports = async (reviewId, userIds) => {
+    try {
+      await Promise.all(
+        userIds.map((uid) =>
+          client.delete('/admin/reviews/report', { params: { review_id: reviewId, user_id: uid } })
+        )
+      );
+      toast.info('Reports dismissed');
+      loadReported();
+    } catch {
+      toast.error('Failed to dismiss');
+    }
   };
 
   const handleCreateModule = async () => {
@@ -135,13 +139,12 @@ export default function Admin() {
               {reported.length === 0 ? (
                 <tr><td colSpan={4} style={{ textAlign: 'center', color: 'var(--text-muted)', padding: 20 }}>No reports</td></tr>
               ) : reported.map((r) => (
-                <tr key={r.id || r.reviewId}>
-                  <td style={{ fontFamily: 'var(--mono)', fontSize: '0.8rem' }}>{r.moduleCode || r.mc}</td>
-                  <td>{r.reviewTitle || r.title}</td>
-                  <td><span className="report-badge">🚩 {r.count || r.reportCount}</span></td>
+                <tr key={r.id}>
+                  <td style={{ fontFamily: 'var(--mono)', fontSize: '0.8rem' }}>{r.module_code}</td>
+                  <td>{r.title}</td>
+                  <td><span className="report-badge">🚩 {r.report_count}</span></td>
                   <td>
-                    <button className="btn btn-danger btn-sm" onClick={() => handleRemoveReview(r.reviewId || r.id)} style={{ marginRight: 5 }}>Remove</button>
-                    <button className="btn btn-secondary btn-sm" onClick={() => handleDismiss(r.id || r.reportId)}>Dismiss</button>
+                    <button className="btn btn-secondary btn-sm" onClick={() => handleDismissReports(r.id, r.users || [])}>Dismiss</button>
                   </td>
                 </tr>
               ))}

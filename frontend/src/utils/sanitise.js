@@ -56,7 +56,7 @@ export function sanitiseEmail(email) {
  * @returns {string|null}
  */
 export function validatePassword(password) {
-  if (!password || password.length < 6) return 'Password must be at least 6 characters.';
+  if (!password || password.length < 8) return 'Password must be at least 8 characters.';
   if (password.length > 128) return 'Password is too long.';
   return null;
 }
