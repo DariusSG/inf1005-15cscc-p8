@@ -126,8 +126,8 @@ function ReviewCard({ review, moduleCode, onRefresh }) {
   const [cmtText, setCmtText] = useState('');
   const [editOpen, setEditOpen] = useState(false);
 
-  const isOwn = user && user.id === review.userId;
-  const myVote = review.userVote;
+  const isOwn = user && user.id === review.user_id;
+  const myVote = review.user_vote;
 
   const handleVote = async (dir) => {
     if (!user) { toast.error('Sign in to vote'); return; }
@@ -165,10 +165,10 @@ function ReviewCard({ review, moduleCode, onRefresh }) {
       <div className="rev-card">
         <div className="rev-top">
           <div className="rev-author">
-            <Avatar name={review.author?.name || review.authorName || '?'} variant="accent" size="sm" />
+            <Avatar name={review.author || '?'} variant="accent" size="sm" />
             <div>
-              <div style={{ fontWeight: 600, fontSize: '0.88rem' }}>{review.author?.name || review.authorName}</div>
-              <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{review.createdAt?.split('T')[0] || review.date}</div>
+              <div style={{ fontWeight: 600, fontSize: '0.88rem' }}>{review.author}</div>
+              <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{review.date?.split?.('T')?.[0] || review.date}</div>
             </div>
           </div>
           <Stars rating={review.rating} />
@@ -193,11 +193,11 @@ function ReviewCard({ review, moduleCode, onRefresh }) {
           <div className="comments-area">
             {(review.comments || []).map((c, i) => (
               <div className="cmt" key={i}>
-                <Avatar name={c.author?.name || c.authorName || '?'} variant="blue" size="sm" />
+                <Avatar name={c.a || '?'} variant="blue" size="sm" />
                 <div>
-                  <span className="cmt-author">{c.author?.name || c.authorName}</span>{' '}
-                  <span className="cmt-text">{c.content || c.text}</span>
-                  <div className="cmt-time">{c.createdAt?.split('T')[0] || c.time}</div>
+                  <span className="cmt-author">{c.a}</span>{' '}
+                  <span className="cmt-text">{c.t}</span>
+                  <div className="cmt-time">{c.time?.split?.('T')?.[0] || c.time}</div>
                 </div>
               </div>
             ))}

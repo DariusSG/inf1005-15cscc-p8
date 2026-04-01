@@ -1,5 +1,9 @@
 import client from './client';
 
+// ── Stats (public) ────────────────────────────────────────
+export const getStats = () =>
+  client.get('/stats').then((r) => r.data);
+
 // ── Modules ──────────────────────────────────────────────
 export const getModules = () =>
   client.get('/modules').then((r) => r.data);
@@ -18,13 +22,13 @@ export const putReview = (id, data) =>
   client.post(`/reviews/${id}`, data).then((r) => r.data);
 
 export const postReviewVote = (id, direction) =>
-  client.post(`/reviews/${id}/vote`, { direction }).then((r) => r.data);
+  client.post(`/reviews/${id}/vote`, { type: direction }).then((r) => r.data);
 
 export const postReviewReport = (id) =>
   client.post(`/reviews/${id}/report`).then((r) => r.data);
 
 export const postReviewComment = (id, content) =>
-  client.post(`/reviews/${id}/comments`, { content }).then((r) => r.data);
+  client.post(`/reviews/${id}/comments`, { text: content }).then((r) => r.data);
 
 // ── Tutors ────────────────────────────────────────────────
 export const getTutors = (params) =>

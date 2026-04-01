@@ -65,12 +65,12 @@ function CreateHelpModal({ onClose, onSaved }) {
     try {
       await postHelpRequest({
         title: cleanTitle,
-        moduleCode,
+        module_code: moduleCode,
         description: cleanDesc,
         urgency: cleanUrgency,
-        contactEmail: cleanHandle + '@sit.singaporetech.edu.sg',
-        hasBounty: bountyOn,
-        bountyAmount: bountyOn ? cleanBounty : 0,
+        contact_email: cleanHandle + '@sit.singaporetech.edu.sg',
+        has_bounty: bountyOn,
+        bounty_amount: bountyOn ? cleanBounty : 0,
       });
       toast.success('Help request posted!');
       onSaved();

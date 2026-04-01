@@ -1,7 +1,7 @@
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import Modal from './Modal';
 import { useAuth } from '../context/AuthContext';
-import { sanitiseEmail, validatePassword, sanitiseField } from '../utils/sanitise';
+import { sanitiseEmail, validatePassword } from '../utils/sanitise';
 import { postForgotPassword } from '../api/auth';
 import toast from 'react-hot-toast';
 
@@ -80,7 +80,7 @@ function ForgotPasswordView({ onBack }) {
 
 // ─── Main AuthModal ──────────────────────────────────────────────────────────
 export default function AuthModal({ onClose }) {
-    const { login, requestRegister, completeRegister } = useAuth();
+    const { login, requestRegister } = useAuth();
 
     // 'login' | 'register' | 'forgot'
     const [tab, setTab] = useState('login');
@@ -92,14 +92,8 @@ export default function AuthModal({ onClose }) {
     const [loginEmail, setLoginEmail] = useState('');
     const [loginPw, setLoginPw] = useState('');
 
-    const [regName, setRegName] = useState('');
     const [regEmail, setRegEmail] = useState('');
-    const [regPw, setRegPw] = useState('');
-    const [regCpw, setRegCpw] = useState('');
-
-    const [otpValues, setOtpValues] = useState(['', '', '', '', '', '']);
-    const [inviteToken, setInviteToken] = useState('');
-    const otpRefs = useRef([]);
+    const [inviteSent, setInviteSent] = useState(false);
 
     const clearError = () => setError('');
 
@@ -123,88 +117,16 @@ export default function AuthModal({ onClose }) {
 
     const handleRegister = async () => {
         clearError();
-        const cleanName = sanitiseField(regName, 'name');
-        if (!cleanName) { setError('Name required.'); return; }
         const cleanEmail = sanitiseEmail(regEmail);
-        if (!cleanEmail) { setError('Only SIT emails allowed.'); return; }
-        const pwErr = validatePassword(regPw);
-        if (pwErr) { setError(pwErr); return; }
-        if (regPw !== regCpw) { setError("Passwords don't match."); return; }
+        if (!cleanEmail) { setError('Only SIT emails allowed (@sit.singaporetech.edu.sg).'); return; }
         setLoading(true);
         try {
-            const res = await requestRegister(cleanEmail);
-            if (res?.token) setInviteToken(res.token);
-            setStep('otp');
-            toast.info('Verification email sent!');
+            await requestRegister(cleanEmail);
+            setInviteSent(true);
         } catch (e) {
             setError(e.response?.data?.message || 'Registration failed.');
         } finally { setLoading(false); }
     };
-
-    const handleOtpChange = (i, val) => {
-        if (!/^\d?$/.test(val)) return;
-        const next = [...otpValues];
-        next[i] = val;
-        setOtpValues(next);
-        if (val && i < 5) otpRefs.current[i + 1]?.focus();
-    };
-
-    const handleOtpKey = (i, e) => {
-        if (e.key === 'Backspace' && !otpValues[i] && i > 0) otpRefs.current[i - 1]?.focus();
-    };
-
-    const handleVerifyOtp = async () => {
-        const code = otpValues.join('');
-        if (code.length !== 6) { setError('Enter 6 digits.'); return; }
-        setLoading(true);
-        try {
-            const cleanName = sanitiseField(regName, 'name');
-            const u = await completeRegister(inviteToken || code, cleanName, regPw);
-            if (u) { toast.success(`Welcome, ${u.name}!`); onClose(); }
-        } catch (e) {
-            setError(e.response?.data?.message || 'Invalid code.');
-        } finally { setLoading(false); }
-    };
-
-    // ── OTP step ──────────────────────────────────────────────────────────────
-    if (step === 'otp') {
-        return (
-            <Modal onClose={onClose} className="modal-sm">
-                <div style={{ textAlign: 'center', padding: '24px 22px' }}>
-                    <div style={{ fontSize: '2.2rem', marginBottom: 10 }}>📧</div>
-                    <h3 style={{ marginBottom: 4 }}>Verify Your Email</h3>
-                    <p style={{ color: 'var(--text-secondary)', fontSize: '0.88rem', marginBottom: 16 }}>
-                        Code sent to <strong>{sanitiseEmail(regEmail) || regEmail}</strong>
-                    </p>
-                    <div className="otp-inputs">
-                        {otpValues.map((v, i) => (
-                            <input
-                                key={i}
-                                ref={(el) => (otpRefs.current[i] = el)}
-                                type="text"
-                                inputMode="numeric"
-                                maxLength={1}
-                                value={v}
-                                onChange={(e) => handleOtpChange(i, e.target.value)}
-                                onKeyDown={(e) => handleOtpKey(i, e)}
-                                autoComplete="one-time-code"
-                            />
-                        ))}
-                    </div>
-                    {error && <div className="form-error" style={{ textAlign: 'center', marginBottom: 10 }}>{error}</div>}
-                    <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center' }} onClick={handleVerifyOtp} disabled={loading}>
-                        {loading ? 'Verifying...' : 'Verify'}
-                    </button>
-                    <p style={{ marginTop: 10, fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                        Didn't get it?{' '}
-                        <a href="#" onClick={(e) => { e.preventDefault(); requestRegister(sanitiseEmail(regEmail) || regEmail); toast.info('Resent!'); }}>
-                            Resend
-                        </a>
-                    </p>
-                </div>
-            </Modal>
-        );
-    }
 
     // ── Forgot Password step ──────────────────────────────────────────────────
     if (tab === 'forgot') {
@@ -274,28 +196,30 @@ export default function AuthModal({ onClose }) {
                         </a>
                     </p>
                 </div>
+            ) : inviteSent ? (
+                <div style={{ textAlign: 'center', padding: '32px 22px' }}>
+                    <div style={{ fontSize: '2.2rem', marginBottom: 12 }}>📬</div>
+                    <h3 style={{ marginBottom: 8 }}>Check your email</h3>
+                    <p style={{ color: 'var(--text-secondary)', fontSize: '0.88rem', lineHeight: 1.6, marginBottom: 20 }}>
+                        A registration link has been sent to <strong>{regEmail}</strong>. Click the link to set up your account.
+                    </p>
+                    <button className="btn btn-secondary" style={{ width: '100%', justifyContent: 'center' }} onClick={() => switchTab('login')}>
+                        Back to Sign In
+                    </button>
+                </div>
             ) : (
                 <div style={{ padding: '20px 22px' }}>
-                    <div className="form-group">
-                        <label htmlFor="reg-name">Full Name</label>
-                        <input id="reg-name" type="text" placeholder="Your full name" value={regName} onChange={(e) => setRegName(e.target.value)} autoComplete="name" maxLength={100} />
-                    </div>
+                    <p style={{ color: 'var(--text-secondary)', fontSize: '0.86rem', marginBottom: 18, lineHeight: 1.5 }}>
+                        Enter your SIT email to receive a registration invite link.
+                    </p>
                     <div className="form-group">
                         <label htmlFor="reg-email">SIT Email</label>
-                        <input id="reg-email" type="email" placeholder="student@sit.singaporetech.edu.sg" value={regEmail} onChange={(e) => setRegEmail(e.target.value)} autoComplete="email" maxLength={254} />
+                        <input id="reg-email" type="email" placeholder="student@sit.singaporetech.edu.sg" value={regEmail} onChange={(e) => setRegEmail(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleRegister()} autoComplete="email" maxLength={254} />
                         <div className="form-hint">Only @sit.singaporetech.edu.sg emails</div>
-                    </div>
-                    <div className="form-group">
-                        <label htmlFor="reg-pw">Password</label>
-                        <input id="reg-pw" type="password" placeholder="Min 6 characters" value={regPw} onChange={(e) => setRegPw(e.target.value)} autoComplete="new-password" maxLength={128} />
-                    </div>
-                    <div className="form-group">
-                        <label htmlFor="reg-cpw">Confirm Password</label>
-                        <input id="reg-cpw" type="password" placeholder="Confirm password" value={regCpw} onChange={(e) => setRegCpw(e.target.value)} autoComplete="new-password" maxLength={128} />
                     </div>
                     {error && <div className="form-error">{error}</div>}
                     <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', marginTop: 6 }} onClick={handleRegister} disabled={loading}>
-                        {loading ? 'Sending...' : 'Create Account'}
+                        {loading ? 'Sending...' : 'Send Registration Link'}
                     </button>
                 </div>
             )}

@@ -285,6 +285,7 @@ class ReviewRepository extends BaseRepository
 
         return [
             'id'         => $review->id,
+            'user_id'    => $review->user_id,
             'module_code'=> $review->module_code,
             'author'     => self::shortname($review->author),
             'email'      => $review->author?->email,

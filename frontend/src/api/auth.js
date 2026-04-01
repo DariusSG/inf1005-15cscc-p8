@@ -31,4 +31,4 @@ export const postResetPassword = (token, password) =>
     client.post('/auth/password/reset', { token, password }).then((r) => r.data);
 
 export const postChangePassword = (currentPassword, newPassword) =>
-    client.post('/auth/password/change', { currentPassword, newPassword }).then((r) => r.data);
+    client.post('/auth/password/change', { current_password: currentPassword, new_password: newPassword }).then((r) => r.data);

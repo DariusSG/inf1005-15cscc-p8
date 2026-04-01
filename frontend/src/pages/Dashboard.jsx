@@ -171,10 +171,10 @@ export default function Dashboard() {
                     <div className="dash-item" key={r.id}>
                         <div className="di-info">
                             <div className="di-title">{'★'.repeat(r.rating)} {r.title}</div>
-                            <div className="di-sub">{r.moduleCode || r.module} · {r.createdAt?.split('T')[0] || r.date}</div>
+                            <div className="di-sub">{r.module_code} · {r.date?.split('T')[0]}</div>
                         </div>
                         <div className="di-actions">
-                            <button className="btn btn-secondary btn-sm" onClick={() => navigate(`/modules/${r.moduleCode || r.module}`)}>
+                            <button className="btn btn-secondary btn-sm" onClick={() => navigate(`/modules/${r.module_code}`)}>
                                 View
                             </button>
                         </div>

@@ -15,6 +15,7 @@ import Dashboard from "./pages/Dashboard";
 import Admin from "./pages/Admin";
 import { NotFound, ErrorBoundaryPage } from "./pages/Error";
 import ResetPassword from "./pages/ResetPassword";
+import RegisterComplete from "./pages/RegisterComplete";
 
 function AppLayout({ children }) {
     const [authOpen, setAuthOpen] = useState(false);
@@ -37,6 +38,11 @@ const router = createBrowserRouter([
         // User arrives here from the link in their reset email
         path: "/reset-password",
         element: <ResetPassword />,
+    },
+    {
+        // Registration completion — user arrives here from the invite link in their email
+        path: "/register/complete",
+        element: <RegisterComplete />,
     },
     {
         path: "/",

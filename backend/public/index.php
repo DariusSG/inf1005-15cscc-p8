@@ -39,11 +39,20 @@ $router->prefix('/api/v1', function ($router) {
     $router->get('/auth/password/verify',    'AuthController@verifyPasswordResetToken');
     $router->post('/auth/password/reset',    'AuthController@resetPassword');
 
+    // --- Public Browse (no auth required) ---
+    $router->get('/stats',                       'StatsController@index');
+    $router->get('/modules',                     'ModuleController@index');
+    $router->get('/modules/{code}',              'ModuleController@show');
+    $router->get('/tutors',                      'TutorController@index');
+    $router->get('/study-groups',                'StudyGroupController@index');
+    $router->get('/help-requests',               'HelpRequestController@index');
+    $router->get('/help-requests/{id}',          'HelpRequestController@show');
+
     // --- Admin Only Section ---
     $router->middleware(['JwtMiddleware:admin'], function ($router) {
         $router->get('/admin/users',            'AdminController@user_index');
         $router->get('/admin/users/{id}',       'AdminController@user_show');
-        $router->get('/admin/reported-reviews', 'AdminController@reportedReviews_show');
+        $router->get('/admin/reviews/report', 'AdminController@reportedReviews_show');
         $router->post('/admin/modules',         'AdminController@module_store');
     });
 
@@ -53,10 +62,6 @@ $router->prefix('/api/v1', function ($router) {
         $router->post('/auth/logout', 'AuthController@logout');
         $router->post('/auth/password/change', 'AuthController@changePassword');
 
-        // Modules
-        $router->get('/modules',        'ModuleController@index');
-        $router->get('/modules/{code}', 'ModuleController@show');
-
         // Reviews
         $router->get('/reviews',                'ReviewController@index');
         $router->post('/reviews',               'ReviewController@store');
@@ -65,16 +70,12 @@ $router->prefix('/api/v1', function ($router) {
         $router->post('/reviews/{id}/report',   'ReviewController@report');
         $router->post('/reviews/{id}/comments', 'ReviewController@addComment');
 
-        // Tutors & Study Groups
-        $router->get('/tutors',        'TutorController@index');
+        // Tutors & Study Groups (write actions only)
         $router->post('/tutors',       'TutorController@store');
-        $router->get('/study-groups',  'StudyGroupController@index');
         $router->post('/study-groups', 'StudyGroupController@store');
 
-        // Help requests
-        $router->get('/help-requests',               'HelpRequestController@index');
+        // Help requests (write actions only)
         $router->post('/help-requests',              'HelpRequestController@store');
-        $router->get('/help-requests/{id}',          'HelpRequestController@show');
         $router->post('/help-requests/{id}/respond', 'HelpRequestController@respond');
         $router->post('/help-requests/{id}/solve',   'HelpRequestController@solve');
     });

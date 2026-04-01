@@ -1,34 +1,21 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
-import { getModules } from '../api/index';
-import { getHelpRequests } from '../api/index';
-import { getTutors } from '../api/index';
+import { getStats } from '../api/index';
 
 export default function Home() {
   const navigate = useNavigate();
   const [stats, setStats] = useState({ modules: 0, reviews: 0, avg: '—', tutors: 0, openHelp: 0 });
 
   useEffect(() => {
-    Promise.allSettled([
-      getModules(),
-      getTutors(),
-      getHelpRequests({ status: 'open' }),
-    ]).then(([modsRes, tutRes, helpRes]) => {
-      const mods = modsRes.status === 'fulfilled' ? (modsRes.value?.data || modsRes.value || []) : [];
-      const tutors = tutRes.status === 'fulfilled' ? (tutRes.value?.data || tutRes.value || []) : [];
-      const helpOpen = helpRes.status === 'fulfilled' ? (helpRes.value?.data || helpRes.value || []) : [];
-      const allReviews = mods.flatMap((m) => m.reviews || []);
-      const avg = allReviews.length
-        ? (allReviews.reduce((s, r) => s + (r.rating || 0), 0) / allReviews.length).toFixed(1)
-        : '—';
-      setStats({
-        modules: mods.length,
-        reviews: allReviews.length,
-        avg,
-        tutors: Array.isArray(tutors) ? tutors.length : tutors.total || 0,
-        openHelp: Array.isArray(helpOpen) ? helpOpen.length : helpOpen.total || 0,
-      });
-    });
+    getStats()
+      .then((data) => setStats({
+        modules: data.modules || 0,
+        reviews: data.reviews || 0,
+        avg: data.avg_rating ?? '—',
+        tutors: data.tutors || 0,
+        openHelp: data.open_help || 0,
+      }))
+      .catch(() => {});
   }, []);
 
   return (
