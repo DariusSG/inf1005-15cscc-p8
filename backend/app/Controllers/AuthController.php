@@ -5,6 +5,7 @@ namespace App\Controllers;
 use App\Core\Request;
 use App\Core\Response;
 use App\Core\Cookie;
+use App\Core\Logger;
 use App\Config\JwtConfig;
 use App\Middleware\JwtMiddleware;
 use App\Services\AuthService;
@@ -76,9 +77,11 @@ class AuthController
 
             Response::json(['message' => 'If that email is valid, a registration link has been sent.']);
         } catch (InvalidArgumentException $e) {
-            Response::json(['error' => $e->getMessage()], 400);
+            Logger::channel()->error('Error at AuthController@requestRegistration', ['exception' => $e]);
+            Response::json(['error' => 'Invalid registration data'], 400);
         } catch (RuntimeException|Exception $e) {
-            Response::json(['error' => $e->getMessage()], 500);
+            Logger::channel()->error('Error at AuthController@requestRegistration', ['exception' => $e]);
+            Response::json(['error' => 'An unexpected error occurred'], 500);
         }
     }
 
@@ -113,7 +116,8 @@ class AuthController
             // without exposing the full address in the JS bundle
             Response::json(['email' => $this->maskEmail($email)]);
         } catch (RuntimeException $e) {
-            Response::json(['error' => $e->getMessage()], 400);
+            Logger::channel()->error('Error at AuthController@checkVerifyToken', ['exception' => $e]);
+            Response::json(['error' => 'Invalid token'], 400);
         }
     }
 
@@ -160,9 +164,11 @@ class AuthController
 
             Response::json($tokens, 201);
         } catch (InvalidArgumentException $e) {
+            Logger::channel()->error('Error at AuthController@completeRegistration', ['exception' => $e]);
             Response::json(['error' => 'Invalid registration data'], 400);
         } catch (RuntimeException $e) {
-            Response::json(['error' => $e->getMessage()], 409);
+            Logger::channel()->error('Error at AuthController@completeRegistration', ['exception' => $e]);
+            Response::json(['error' => 'Registration conflict'], 409);
         }
     }
 
@@ -199,9 +205,11 @@ class AuthController
                 'message' => 'If that email exists, a password reset link has been sent.'
             ]);
         } catch (InvalidArgumentException $e) {
-            Response::json(['error' => $e->getMessage()], 400);
+            Logger::channel()->error('Error at AuthController@forgotPassword', ['exception' => $e]);
+            Response::json(['error' => 'Invalid request'], 400);
         } catch (Exception $e) {
-            Response::json(['error' => $e->getMessage()], 500);
+            Logger::channel()->error('Error at AuthController@forgotPassword', ['exception' => $e]);
+            Response::json(['error' => 'An unexpected error occurred'], 500);
         }
     }
 
@@ -231,7 +239,8 @@ class AuthController
                 'message' => 'Token is valid'
             ]);
         } catch (RuntimeException $e) {
-            Response::json(['error' => $e->getMessage()], 400);
+            Logger::channel()->error('Error at AuthController@verifyPasswordResetToken', ['exception' => $e]);
+            Response::json(['error' => 'Invalid token'], 400);
         }
     }
 
@@ -268,7 +277,8 @@ class AuthController
             $this->authService->completePasswordReset($token, $password);
             Response::json(['message' => 'Password reset successful.']);
         } catch (InvalidArgumentException|RuntimeException $e) {
-            Response::json(['error' => $e->getMessage()], 400);
+            Logger::channel()->error('Error at AuthController@resetPassword', ['exception' => $e]);
+            Response::json(['error' => 'Invalid request'], 400);
         }
     }
 
@@ -304,7 +314,8 @@ class AuthController
 
             Response::json($tokens);
         } catch (\Exception $e) {
-            Response::json(['error' => $e->getMessage()], 500);
+            Logger::channel()->error('Error at AuthController@login', ['exception' => $e]);
+            Response::json(['error' => 'An unexpected error occurred'], 500);
         }
     }
 
@@ -334,7 +345,8 @@ class AuthController
             $user = $this->userService->getUserById($payload->sub);
             Response::json($user);
         } catch (\Exception $e) {
-            Response::json(['error' => $e->getMessage()], 404);
+            Logger::channel()->error('Error at AuthController@me', ['exception' => $e]);
+            Response::json(['error' => 'User not found'], 404);
         }
     }
 
@@ -377,7 +389,8 @@ class AuthController
             unset($tokens['refresh_token']);
             Response::json($tokens);
         } catch (\Exception $e) {
-            Response::json(['error' => $e->getMessage()], 401);
+            Logger::channel()->error('Error at AuthController@refresh', ['exception' => $e]);
+            Response::json(['error' => 'Invalid refresh token'], 401);
         }
     }
 
@@ -424,7 +437,8 @@ class AuthController
             Cookie::delete('refresh_token');
             Response::json($result);
         } catch (\Exception $e) {
-            Response::json(['error' => $e->getMessage()], 401);
+            Logger::channel()->error('Error at AuthController@logout', ['exception' => $e]);
+            Response::json(['error' => 'Logout failed'], 401);
         }
     }
 
@@ -469,7 +483,8 @@ class AuthController
             Cookie::delete('refresh_token');
             Response::json(['message' => 'Password changed successfully. Please sign in again.']);
         } catch (InvalidArgumentException|RuntimeException $e) {
-            Response::json(['error' => $e->getMessage()], 400);
+            Logger::channel()->error('Error at AuthController@changePassword', ['exception' => $e]);
+            Response::json(['error' => 'Invalid request'], 400);
         }
     }
 

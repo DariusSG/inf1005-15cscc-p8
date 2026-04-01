@@ -5,6 +5,7 @@ namespace App\Controllers;
 use App\Core\Request;
 use App\Core\Response;
 use App\Core\Validators;
+use App\Core\Logger;
 use App\Middleware\JwtMiddleware;
 use App\Repositories\TutorRepository;
 use OpenApi\Attributes as OA;
@@ -120,7 +121,8 @@ class TutorController
 
             Response::json(TutorRepository::format($tutor), 201);
         } catch (\InvalidArgumentException $e) {
-            Response::json(['error' => $e->getMessage()], 400);
+            Logger::channel()->error('Error at TutorController@store', ['exception' => $e]);
+            Response::json(['error' => 'Invalid tutor data'], 400);
         }
     }
 }

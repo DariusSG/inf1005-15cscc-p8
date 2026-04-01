@@ -41,7 +41,8 @@ class JwtMiddleware implements Middleware
         } catch (ExpiredException) {
             Response::json(["error" => "Token expired"], 401);
         } catch (Exception $e) {
-            Response::json(["error" => "Unauthorized: " . $e->getMessage()], 401);
+            // Do not expose exception details in responses
+            Response::json(["error" => "Unauthorized"], 401);
         }
         
     }

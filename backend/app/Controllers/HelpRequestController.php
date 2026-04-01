@@ -5,6 +5,7 @@ namespace App\Controllers;
 use App\Core\Validators;
 use App\Core\Request;
 use App\Core\Response;
+use App\Core\Logger;
 use App\Middleware\JwtMiddleware;
 use App\Repositories\HelpRequestRepository;
 use InvalidArgumentException;
@@ -160,7 +161,8 @@ class HelpRequestController
 
             Response::json(HelpRequestRepository::format($req), 201);
         } catch (InvalidArgumentException $e) {
-            Response::json(['error' => $e->getMessage()], 400);
+            Logger::channel()->error('Error at HelpRequestController@store', ['exception' => $e]);
+            Response::json(['error' => 'Invalid request'], 400);
         }
     }
 

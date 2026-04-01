@@ -5,6 +5,7 @@ namespace App\Controllers;
 use App\Core\Validators;
 use App\Core\Request;
 use App\Core\Response;
+use App\Core\Logger;
 use App\Middleware\JwtMiddleware;
 use App\Repositories\ReviewRepository;
 use App\Repositories\ModuleRepository;
@@ -140,7 +141,8 @@ class ReviewController
 
             Response::json(ReviewRepository::format($review->fresh(['author', 'comments']), $userId), 201);
         } catch (\InvalidArgumentException $e) {
-            Response::json(['error' => $e->getMessage()], 400);
+            Logger::channel()->error('Error at ReviewController@store', ['exception' => $e]);
+            Response::json(['error' => 'Invalid review data'], 400);
         }
     }
 
@@ -201,7 +203,8 @@ class ReviewController
                 ? Validators::stringCheck($data['usefulness'], 'Content', 50)
                 : $review->usefulness;
         } catch (\InvalidArgumentException $e) {
-            Response::json(['error' => $e->getMessage()], 400);
+            Logger::channel()->error('Error at ReviewController@update', ['exception' => $e]);
+            Response::json(['error' => 'Invalid review data'], 400);
         }
 
         $updated = ReviewRepository::update($review, compact(

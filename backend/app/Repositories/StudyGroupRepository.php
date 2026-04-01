@@ -25,7 +25,7 @@ class StudyGroupRepository extends BaseRepository
     {
         $search = $filters['search'] ?? null;
 
-        $query = StudyGroup::with('creator:id,email');
+        $query = StudyGroup::with('creator:id,name,email');
 
         if ($search) {
             $escaped = self::escapeSearch($search);
@@ -51,11 +51,11 @@ class StudyGroupRepository extends BaseRepository
 
     public static function all(?string $search = null): array
     {
-        $q = StudyGroup::with('creator:id,email');
+        $q = StudyGroup::with('creator:id,name,email');
         if ($search) {
             $q->where(function ($q) use ($search) {
                 $escaped = self::escapeSearch($search);
-                $q->whereRaw('title LIKE ?', [$escaped])
+                $q->whereRaw('name LIKE ?', [$escaped])
                   ->orWhereRaw('module_code LIKE ?', [$escaped]);
             });
         }
