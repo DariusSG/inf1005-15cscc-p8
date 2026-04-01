@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router';
 import { getPasswordVerify, postResetPassword } from '../api/auth';
 import { validatePassword } from '../utils/sanitise';
 import toast from 'react-hot-toast';
