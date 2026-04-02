@@ -5,7 +5,6 @@ require __DIR__.'/../vendor/autoload.php';
 use App\Config\Database;
 use App\Core\Helpers;
 use App\Core\Migrator;
-use Illuminate\Database\Capsule\Manager as Capsule;
 
 // Initialise DB (no migration run — status is read-only)
 try {
