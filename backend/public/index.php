@@ -52,6 +52,7 @@ $router->prefix('/api/v1', function ($router) {
     $router->middleware(['JwtMiddleware:admin'], function ($router) {
         $router->get('/admin/users',             'AdminController@user_index');
         $router->get('/admin/users/{id}',        'AdminController@user_show');
+        $router->delete('/admin/users/{id}',     'AdminController@user_delete');
         $router->get('/admin/reviews/report',    'AdminController@reportedReviews_show');
         $router->delete('/admin/reviews/report', 'AdminController@reportedReviews_delete');
         $router->post('/admin/modules',          'AdminController@module_store');
@@ -60,6 +61,7 @@ $router->prefix('/api/v1', function ($router) {
     // --- General Authenticated Section ---
     $router->middleware(['JwtMiddleware'], function ($router) {
         $router->get('/auth/me',      'AuthController@me');
+        $router->delete('/auth/me',    'AuthController@deleteMe');
         $router->post('/auth/logout', 'AuthController@logout');
         $router->post('/auth/password/change', 'AuthController@changePassword');
 
@@ -72,8 +74,10 @@ $router->prefix('/api/v1', function ($router) {
         $router->post('/reviews/{id}/comments', 'ReviewController@addComment');
 
         // Tutors & Study Groups (write actions only)
-        $router->post('/tutors',       'TutorController@store');
-        $router->post('/study-groups', 'StudyGroupController@store');
+        $router->post('/tutors',                  'TutorController@store');
+        $router->post('/study-groups',             'StudyGroupController@store');
+        $router->post('/study-groups/{id}/join',   'StudyGroupController@join');
+        $router->post('/study-groups/{id}/leave',  'StudyGroupController@leave');
 
         // Help requests (write actions only)
         $router->post('/help-requests',              'HelpRequestController@store');

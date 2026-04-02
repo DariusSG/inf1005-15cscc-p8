@@ -28,6 +28,11 @@ class Review extends Model
         return $this->belongsTo(User::class, 'user_id');
     }
 
+    public function module()
+    {
+        return $this->belongsTo(Module::class, 'module_code', 'code');
+    }
+
     public function comments()
     {
         return $this->hasMany(ReviewComment::class);

@@ -75,7 +75,13 @@ class HelpRequestRepository extends BaseRepository
             $escaped = self::escapeSearch($search);
             $query->where(function ($q) use ($escaped) {
                 $q->whereRaw('title LIKE ?', [$escaped])
-                  ->orWhereRaw('module_code LIKE ?', [$escaped]);
+                ->orWhereRaw('description LIKE ?', [$escaped])
+                ->orWhereRaw('module_code LIKE ?', [$escaped])
+                ->orWhereHas('module', fn($mq) => $mq
+                    ->whereRaw('code LIKE ?', [$escaped])
+                    ->orWhereRaw('name LIKE ?', [$escaped])
+                    ->orWhereRaw('description LIKE ?', [$escaped])
+                );
             });
         }
 
@@ -108,10 +114,16 @@ class HelpRequestRepository extends BaseRepository
         $q = HelpRequest::with(['author:id,email', 'responses.author:id,email']);
 
         if ($search) {
-            $q->where(function ($q) use ($search) {
-                $escaped = self::escapeSearch($search);
+            $escaped = self::escapeSearch($search);
+            $q->where(function ($q) use ($escaped) {
                 $q->whereRaw('title LIKE ?', [$escaped])
-                    ->orWhereRaw('module_code LIKE ?', [$escaped]);
+                    ->orWhereRaw('description LIKE ?', [$escaped])
+                    ->orWhereRaw('module_code LIKE ?', [$escaped])
+                    ->orWhereHas('module', fn($mq) => $mq
+                        ->whereRaw('code LIKE ?', [$escaped])
+                        ->orWhereRaw('name LIKE ?', [$escaped])
+                        ->orWhereRaw('description LIKE ?', [$escaped])
+                    );
             });
         }
 

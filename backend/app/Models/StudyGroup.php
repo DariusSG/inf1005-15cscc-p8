@@ -20,4 +20,15 @@ class StudyGroup extends Model
     {
         return $this->belongsTo(User::class, 'user_id');
     }
+
+    public function module()
+    {
+        return $this->belongsTo(Module::class, 'module_code', 'code');
+    }
+
+    public function members()
+    {
+        return $this->belongsToMany(User::class, 'study_group_members', 'study_group_id', 'user_id')
+            ->withTimestamps();
+    }
 }

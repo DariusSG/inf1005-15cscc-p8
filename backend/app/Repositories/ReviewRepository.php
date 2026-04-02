@@ -95,7 +95,16 @@ class ReviewRepository extends BaseRepository
             $escaped = self::escapeSearch($search);
             $query->where(function ($q) use ($escaped) {
                 $q->whereRaw('title LIKE ?', [$escaped])
-                    ->orWhereRaw('content LIKE ?', [$escaped]);
+                ->orWhereRaw('content LIKE ?', [$escaped])
+                ->orWhereRaw('module_code LIKE ?', [$escaped])
+                ->orWhereRaw('difficulty LIKE ?', [$escaped])
+                ->orWhereRaw('usefulness LIKE ?', [$escaped])
+                ->orWhereRaw('workload LIKE ?', [$escaped])
+                ->orWhereHas('module', fn($mq) => $mq
+                    ->whereRaw('code LIKE ?', [$escaped])
+                    ->orWhereRaw('name LIKE ?', [$escaped])
+                    ->orWhereRaw('description LIKE ?', [$escaped])
+                );
             });
         }
 
@@ -128,6 +137,18 @@ class ReviewRepository extends BaseRepository
             ->get()
             ->map(fn($r) => self::format($r, $userId))
             ->all();
+    }
+
+    public static function moduleAggregates(string $moduleCode): array
+    {
+        $base = Review::where('module_code', $moduleCode);
+
+        return [
+            'avg_rating' => self::roundAvg((clone $base)->avg('rating')),
+            'avg_workload' => self::roundAvg((clone $base)->avg('workload')),
+            'avg_difficulty' => self::roundAvg((clone $base)->avg('difficulty')),
+            'avg_usefulness' => self::roundAvg((clone $base)->avg('usefulness')),
+        ];
     }
 
     public static function find(int $id): ?Review
@@ -297,7 +318,7 @@ class ReviewRepository extends BaseRepository
 
         return [
             'id'         => $review->id,
-            'user_id'    => $review->user_id,
+            'user_id'    => $review->author ? $review->user_id : -1,
             'module_code'=> $review->module_code,
             'author'     => self::shortname($review->author),
             'email'      => $review->author?->email,
@@ -317,6 +338,15 @@ class ReviewRepository extends BaseRepository
             'user_vote'  => $review->votes->firstWhere('user_id', $userId)?->type,
             'reported'   => in_array($userId, $reportedBy),
         ];
+    }
+
+    private static function roundAvg(mixed $value): ?float
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        return round((float) $value, 1);
     }
 
 

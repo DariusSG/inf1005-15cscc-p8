@@ -26,4 +26,9 @@ class User extends Model
     protected $hidden = [
         'password',
     ];
+
+    public function isDeleted(): bool
+    {
+        return $this->trashed();
+    }
 }

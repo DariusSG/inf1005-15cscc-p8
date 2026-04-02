@@ -40,6 +40,9 @@ class ModuleRepository extends BaseRepository
         return Module::with(['semesters'])
             ->withCount('reviews')
             ->withAvg('reviews', 'rating')
+            ->withAvg('reviews', 'workload')
+            ->withAvg('reviews', 'difficulty')
+            ->withAvg('reviews', 'usefulness')
             ->get()
             ->map(fn($m) => self::format($m))
             ->all();
@@ -50,6 +53,9 @@ class ModuleRepository extends BaseRepository
         $paginator = Module::with(['semesters'])
             ->withCount('reviews')
             ->withAvg('reviews', 'rating')
+            ->withAvg('reviews', 'workload')
+            ->withAvg('reviews', 'difficulty')
+            ->withAvg('reviews', 'usefulness')
             ->orderBy('code')
             ->paginate($perPage, ['*'], 'page', $page);
 
@@ -70,6 +76,11 @@ class ModuleRepository extends BaseRepository
     public static function findByCode(string $code): ?Module
     {
         return Module::with(['prereqs', 'semesters'])
+            ->withCount('reviews')
+            ->withAvg('reviews', 'rating')
+            ->withAvg('reviews', 'workload')
+            ->withAvg('reviews', 'difficulty')
+            ->withAvg('reviews', 'usefulness')
             ->where('code', $code)
             ->first();
     }
@@ -133,6 +144,12 @@ class ModuleRepository extends BaseRepository
                 ->pluck('code')
                 ->values()
                 ->all();
+        }
+
+        foreach (['reviews_avg_rating', 'reviews_avg_workload', 'reviews_avg_difficulty', 'reviews_avg_usefulness'] as $key) {
+            if (array_key_exists($key, $data) && $data[$key] !== null) {
+                $data[$key] = round((float) $data[$key], 1);
+            }
         }
 
         return $data;

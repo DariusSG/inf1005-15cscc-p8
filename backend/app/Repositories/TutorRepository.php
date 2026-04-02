@@ -41,9 +41,12 @@ class TutorRepository extends BaseRepository
             $escaped = self::escapeSearch($search);
             $query->where(function ($q) use ($escaped) {
                 $q->whereRaw('name LIKE ?', [$escaped])
+                    ->orWhereRaw('contact_email LIKE ?', [$escaped])
+                    ->orWhereRaw('bio LIKE ?', [$escaped])
                     ->orWhereHas('modules', fn($mq) =>
                     $mq->whereRaw('code LIKE ?', [$escaped])
                         ->orWhereRaw('name LIKE ?', [$escaped])
+                        ->orWhereRaw('description LIKE ?', [$escaped])
                     );
             });
         }
@@ -69,12 +72,15 @@ class TutorRepository extends BaseRepository
         $q = Tutor::with(['user:id,email', 'modules:code,name']);
 
         if ($search) {
-            $q->where(function ($q) use ($search) {
-                $escaped = self::escapeSearch($search);
+            $escaped = self::escapeSearch($search);
+            $q->where(function ($q) use ($escaped) {
                 $q->whereRaw('name LIKE ?', [$escaped])
+                  ->orWhereRaw('contact_email LIKE ?', [$escaped])
+                  ->orWhereRaw('bio LIKE ?', [$escaped])
                   ->orWhereHas('modules', fn($mq) =>
                       $mq->whereRaw('code LIKE ?', [$escaped])
                          ->orWhereRaw('name LIKE ?', [$escaped])
+                         ->orWhereRaw('description LIKE ?', [$escaped])
                   );
             });
         }

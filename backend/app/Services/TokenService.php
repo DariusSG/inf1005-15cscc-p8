@@ -13,6 +13,8 @@ use Carbon\Carbon;
 use Random\RandomException;
 use Throwable;
 
+use App\Repositories\UserRepository;
+
 class TokenService
 {
     private const string ISSUER = "sitizen-api";
@@ -76,6 +78,12 @@ class TokenService
         $session = Session::where('jti', $payload->jti)->first();
         if (!$session || $session->revoked || strtotime($session->expires_at) < time()) {
             throw new Exception("Access token revoked or expired");
+        }
+
+        $user = UserRepository::findByIdWithTrashed((int) $payload->sub);
+
+        if (!$user || $user->isDeleted()) {
+            throw new Exception("User account is deleted");
         }
 
         return $payload;

@@ -102,10 +102,14 @@ class ModuleController
 
         $userId  = JwtMiddleware::userId() ?? 0;
         $reviews = ReviewRepository::forModule($module->code, $userId);
+        $aggregates = ReviewRepository::moduleAggregates($module->code);
 
         Response::json(array_merge(
             ModuleRepository::format($module),
-            ['reviews' => $reviews]
+            [
+                'reviews' => $reviews,
+                'review_aggregates' => $aggregates,
+            ]
         ));
     }
 }

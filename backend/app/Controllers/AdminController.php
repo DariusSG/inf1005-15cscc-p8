@@ -232,7 +232,39 @@ readonly class AdminController
         }
     }
 
-    
+    #[OA\Delete(
+        path: "/admin/users/{id}",
+        summary: "Delete user by ID",
+        tags: ["Admin"],
+        security: [["bearerAuth" => []]],
+        parameters: [
+            new OA\Parameter(
+                name: "id",
+                in: "path",
+                required: true,
+                schema: new OA\Schema(type: "integer", description: "User ID")
+            )
+        ],
+        responses: [
+            new OA\Response(response: 200, description: "User deleted"),
+            new OA\Response(response: 404, description: "User not found"),
+            new OA\Response(response: 401, description: "Unauthorized")
+        ]
+    )]
+    public function user_delete(int $id): void
+    {
+        try {
+            $this->userService->deleteUser($id);
+            Response::json(['message' => 'User deleted']);
+        } catch (InvalidArgumentException $e) {
+            Logger::channel()->error('Error at AdminController@user_delete', ['exception' => $e]);
+            Response::json(['error' => $e->getMessage()], 404);
+        } catch (Exception $e) {
+            Logger::channel()->error('Error at AdminController@user_delete', ['exception' => $e]);
+            Response::json(['error' => 'An unexpected error occurred'], 500);
+        }
+    }
+
     #[OA\Post(
         path: "/admin/modules",
         summary: "Create a new module",

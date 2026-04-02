@@ -350,6 +350,37 @@ class AuthController
         }
     }
 
+    #[OA\Delete(
+        path: "/auth/me",
+        summary: "Delete current user",
+        tags: ["Authentication"],
+        security: [["bearerAuth" => []]],
+        responses: [
+            new OA\Response(response: 200, description: "Account deleted"),
+            new OA\Response(response: 401, description: "Unauthorized", content: new OA\JsonContent(ref: "#/components/schemas/ErrorResponse")),
+            new OA\Response(response: 404, description: "User not found", content: new OA\JsonContent(ref: "#/components/schemas/ErrorResponse"))
+        ]
+    )]
+    public function deleteMe(): void
+    {
+        $userId = JwtMiddleware::userId();
+        if (!$userId) {
+            Response::json(['error' => 'Unauthorized'], 401);
+        }
+
+        try {
+            $this->userService->deleteUser((int) $userId);
+            Cookie::delete('refresh_token');
+            Response::json(['message' => 'Account deleted']);
+        } catch (InvalidArgumentException $e) {
+            Logger::channel()->error('Error at AuthController@deleteMe', ['exception' => $e]);
+            Response::json(['error' => $e->getMessage()], 404);
+        } catch (\Exception $e) {
+            Logger::channel()->error('Error at AuthController@deleteMe', ['exception' => $e]);
+            Response::json(['error' => 'An unexpected error occurred'], 500);
+        }
+    }
+
     #[OA\Post(
         path: "/auth/refresh",
         summary: "Refresh access token",

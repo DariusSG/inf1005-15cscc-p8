@@ -22,7 +22,6 @@ class TutorController
         tags: ["Tutors"],
         security: [["bearerAuth" => []]],
         parameters: [
-            new OA\Parameter(name: "search", in: "query", schema: new OA\Schema(type: "string"), description: "Search in name or module code"),
             new OA\Parameter(
                 parameter: "QueryPage",
                 name: "page",

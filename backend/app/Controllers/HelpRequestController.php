@@ -25,7 +25,6 @@ class HelpRequestController
         tags: ["Help Requests"],
         security: [["bearerAuth" => []]],
         parameters: [
-            new OA\Parameter(name: "search", in: "query", schema: new OA\Schema(type: "string")),
             new OA\Parameter(
                 parameter: "QueryPage",
                 name: "page",

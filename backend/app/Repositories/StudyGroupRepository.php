@@ -27,7 +27,8 @@ class StudyGroupRepository extends BaseRepository
         $search     = $filters['search'] ?? null;
         $authorId   = $filters['author_id'] ?? null;
 
-        $query = StudyGroup::with('creator:id,name,email');
+        $query = StudyGroup::with(['creator:id,name,email', 'module:code,name'])
+            ->withCount('members');
 
         if ($moduleCode) {
             $query->where('module_code', $moduleCode);
@@ -41,13 +42,23 @@ class StudyGroupRepository extends BaseRepository
             $escaped = self::escapeSearch($search);
             $query->where(function ($q) use ($escaped) {
                 $q->whereRaw('name LIKE ?', [$escaped])
-                    ->orWhereRaw('module_code LIKE ?', [$escaped]);
+                ->orWhereRaw('module_code LIKE ?', [$escaped])
+                ->orWhereRaw('description LIKE ?', [$escaped])
+                ->orWhereRaw('location LIKE ?', [$escaped])
+                ->orWhereRaw('meeting_time LIKE ?', [$escaped])
+                ->orWhereHas('module', fn($mq) => $mq
+                    ->whereRaw('code LIKE ?', [$escaped])
+                    ->orWhereRaw('name LIKE ?', [$escaped])
+                    ->orWhereRaw('description LIKE ?', [$escaped])
+                );
             });
         }
 
         $paginator = $query->latest()->paginate($perPage, ['*'], 'page', $page);
 
-        $groups = collect($paginator->items())->toArray();
+        $groups = collect($paginator->items())
+            ->map(fn($g) => self::format($g))
+            ->all();
 
         return [
             'data' => $groups,
@@ -61,19 +72,85 @@ class StudyGroupRepository extends BaseRepository
 
     public static function all(?string $search = null): array
     {
-        $q = StudyGroup::with('creator:id,name,email');
+        $q = StudyGroup::with(['creator:id,name,email', 'module:code,name'])
+            ->withCount('members');
         if ($search) {
-            $q->where(function ($q) use ($search) {
-                $escaped = self::escapeSearch($search);
+            $escaped = self::escapeSearch($search);
+            $q->where(function ($q) use ($escaped) {
                 $q->whereRaw('name LIKE ?', [$escaped])
-                  ->orWhereRaw('module_code LIKE ?', [$escaped]);
+                  ->orWhereRaw('module_code LIKE ?', [$escaped])
+                  ->orWhereRaw('description LIKE ?', [$escaped])
+                  ->orWhereRaw('location LIKE ?', [$escaped])
+                  ->orWhereRaw('meeting_time LIKE ?', [$escaped])
+                  ->orWhereHas('module', fn($mq) => $mq
+                      ->whereRaw('code LIKE ?', [$escaped])
+                      ->orWhereRaw('name LIKE ?', [$escaped])
+                      ->orWhereRaw('description LIKE ?', [$escaped])
+                  );
             });
         }
-        return $q->latest()->get()->toArray();
+        return $q->latest()->get()->map(fn($g) => self::format($g))->all();
     }
 
     public static function create(array $data): StudyGroup
     {
-        return StudyGroup::create($data);
+        $group = StudyGroup::create($data);
+        $group->members()->syncWithoutDetaching([$group->user_id]);
+        return $group->fresh(['creator:id,name,email', 'module:code,name'])->loadCount('members');
+    }
+
+    public static function find(int $id): ?StudyGroup
+    {
+        return StudyGroup::with(['creator:id,name,email', 'module:code,name'])
+            ->withCount('members')
+            ->find($id);
+    }
+
+    public static function join(int $studyGroupId, int $userId): array
+    {
+        $group = self::find($studyGroupId);
+        if (!$group) {
+            return ['group' => null, 'joined' => false];
+        }
+
+        $changes = $group->members()->syncWithoutDetaching([$userId]);
+        $group = self::find($studyGroupId);
+
+        return [
+            'group' => self::format($group),
+            'joined' => !empty($changes['attached']),
+        ];
+    }
+
+    public static function leave(int $studyGroupId, int $userId): array
+    {
+        $group = self::find($studyGroupId);
+        if (!$group) {
+            return ['group' => null, 'left' => false];
+        }
+
+        $removed = $group->members()->detach($userId);
+        $group = self::find($studyGroupId);
+
+        return [
+            'group' => self::format($group),
+            'left' => $removed > 0,
+        ];
+    }
+
+    public static function format(StudyGroup $group): array
+    {
+        return [
+            'id' => $group->id,
+            'user_id' => $group->creator ? $group->user_id : -1,
+            'name' => $group->name,
+            'module_code' => $group->module_code,
+            'module_name' => $group->module?->name,
+            'description' => $group->description,
+            'meeting_time' => $group->meeting_time,
+            'location' => $group->location,
+            'member_count' => (int) ($group->members_count ?? 0),
+            'created_at' => $group->created_at,
+        ];
     }
 }

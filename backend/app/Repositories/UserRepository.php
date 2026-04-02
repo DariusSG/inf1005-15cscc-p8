@@ -31,6 +31,11 @@ class UserRepository extends BaseRepository
         return User::select('id', 'email', 'name', 'role')->find($id);
     }
 
+    public static function findByIdWithTrashed(int $id): ?User
+    {
+        return User::withTrashed()->select('id', 'email', 'name', 'role', 'deleted_at')->find($id);
+    }
+
     public static function findByIdWithPassword(int $id): ?User
     {
         return User::select('id', 'email', 'name', 'password', 'role')->find($id);
@@ -66,5 +71,10 @@ class UserRepository extends BaseRepository
                 $page
             ),
         ];
+    }
+
+    public static function delete(User $user): void
+    {
+        $user->delete();
     }
 }

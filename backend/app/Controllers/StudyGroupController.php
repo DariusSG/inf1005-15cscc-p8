@@ -23,7 +23,6 @@ class StudyGroupController
         tags: ["Study Groups"],
         security: [["bearerAuth" => []]],
         parameters: [
-            new OA\Parameter(name: "search", in: "query", schema: new OA\Schema(type: "string"), description: "Search in name or module code"),
             new OA\Parameter(
                 parameter: "QueryPage",
                 name: "page",
@@ -114,7 +113,6 @@ class StudyGroupController
 
         try {
             $name        = Validators::stringCheck($data['name'] ?? '', 'Title', 150);
-            // Accept only snake_case 'module_code' from frontend
             $moduleCode  = Validators::moduleCode($data['module_code'] ?? null);
             $description = isset($data['description'])  ? Validators::stringCheck($data['description'],'Content', 500) : null;
             $location    = isset($data['location'])      ? Validators::stringCheck($data['location'], 'Content', 150)  : null;
@@ -129,10 +127,66 @@ class StudyGroupController
                 'location'     => $location,
             ]);
 
-            Response::json($group->toArray(), 201);
+            Response::json(StudyGroupRepository::format($group), 201);
         } catch (\InvalidArgumentException $e) {
             Logger::channel()->error('Error at StudyGroupController@store', ['exception' => $e]);
             Response::json(['error' => 'Invalid study group data'], 400);
         }
+    }
+
+    #[OA\Post(
+        path: "/study-groups/{id}/join",
+        summary: "Join a study group",
+        tags: ["Study Groups"],
+        security: [["bearerAuth" => []]],
+        parameters: [
+            new OA\Parameter(name: "id", in: "path", required: true, schema: new OA\Schema(type: "integer"))
+        ],
+        responses: [
+            new OA\Response(response: 200, description: "Join operation result"),
+            new OA\Response(response: 404, description: "Study group not found")
+        ]
+    )]
+    public function join(int $id): void
+    {
+        $userId = JwtMiddleware::userId();
+        $result = StudyGroupRepository::join($id, (int) $userId);
+
+        if (!$result['group']) {
+            Response::json(['error' => 'Study group not found'], 404);
+        }
+
+        Response::json([
+            'joined' => $result['joined'],
+            'group' => $result['group'],
+        ]);
+    }
+
+    #[OA\Post(
+        path: "/study-groups/{id}/leave",
+        summary: "Leave a study group",
+        tags: ["Study Groups"],
+        security: [["bearerAuth" => []]],
+        parameters: [
+            new OA\Parameter(name: "id", in: "path", required: true, schema: new OA\Schema(type: "integer"))
+        ],
+        responses: [
+            new OA\Response(response: 200, description: "Leave operation result"),
+            new OA\Response(response: 404, description: "Study group not found")
+        ]
+    )]
+    public function leave(int $id): void
+    {
+        $userId = JwtMiddleware::userId();
+        $result = StudyGroupRepository::leave($id, (int) $userId);
+
+        if (!$result['group']) {
+            Response::json(['error' => 'Study group not found'], 404);
+        }
+
+        Response::json([
+            'left' => $result['left'],
+            'group' => $result['group'],
+        ]);
     }
 }
