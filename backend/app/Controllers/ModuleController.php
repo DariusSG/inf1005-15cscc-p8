@@ -21,7 +21,6 @@ class ModuleController
         path: "/modules",
         summary: "List all modules (paginated)",
         tags: ["Modules"],
-        security: [["bearerAuth" => []]],
         parameters: [
             new OA\Parameter(
                 parameter: "QueryPage",
@@ -67,7 +66,6 @@ class ModuleController
         path: "/modules/{code}",
         summary: "Get module with reviews",
         tags: ["Modules"],
-        security: [["bearerAuth" => []]],
         parameters: [
             new OA\Parameter(name: "code", in: "path", required: true, schema: new OA\Schema(type: "string"))
         ],
@@ -97,7 +95,7 @@ class ModuleController
     {
         $module = ModuleRepository::findByCode(strtoupper($code));
         if (!$module) {
-            Response::json(['error' => 'Module not found'], 404);
+            Response::json(['message' => 'Module not found', 'code' => 'API_ERROR'], 404);
         }
 
         $userId  = JwtMiddleware::userId() ?? 0;

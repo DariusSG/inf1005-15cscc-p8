@@ -48,6 +48,28 @@ class Validators
         return trim(mb_substr($clean, 0, 100));
     }
 
+    public static function positiveInt(mixed $value, string $label = 'id'): int
+    {
+        if ($value === null || $value === '') {
+            throw new InvalidArgumentException("$label is required");
+        }
+
+        if (filter_var($value, FILTER_VALIDATE_INT) === false || (int) $value < 1) {
+            throw new InvalidArgumentException("$label must be a positive integer");
+        }
+
+        return (int) $value;
+    }
+
+    public static function optionalPositiveInt(mixed $value, string $label = 'id'): ?int
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        return self::positiveInt($value, $label);
+    }
+
     // --- Private Helpers to reduce code duplication ---
 
     public static function rangeCheck(mixed $val, float $min, float $max, string $label): ?float
@@ -61,15 +83,26 @@ class Validators
         return $num;
     }
 
-    public static function stringCheck(?string $value, string $label, int $max): string
+    public static function boundedText(?string $value, string $label, int $max, bool $required = true): ?string
     {
         $content = trim($value ?? '');
+
         if ($content === '') {
-            throw new InvalidArgumentException("$label is required");
+            if ($required) {
+                throw new InvalidArgumentException("$label is required");
+            }
+            return null;
         }
+
         if (mb_strlen($content) > $max) {
             throw new InvalidArgumentException("$label cannot exceed $max characters");
         }
+
         return $content;
+    }
+
+    public static function stringCheck(?string $value, string $label, int $max): string
+    {
+        return self::boundedText($value, $label, $max, true);
     }
 }

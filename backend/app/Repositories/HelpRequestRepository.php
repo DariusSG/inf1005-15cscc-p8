@@ -205,6 +205,16 @@ class HelpRequestRepository extends BaseRepository
         return $req->fresh(['author:id,email', 'responses.author:id,email']);
     }
 
+    public static function delete(int $id): bool
+    {
+        $req = HelpRequest::find($id);
+        if (!$req) {
+            return false;
+        }
+
+        return (bool) $req->delete();
+    }
+
     /**
      * Array formatting for JSON
      *

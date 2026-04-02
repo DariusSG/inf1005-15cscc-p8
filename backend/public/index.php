@@ -18,7 +18,7 @@ if (!Helpers::config('app.installed', false)) {
     echo json_encode([
         'error'   => 'not_installed',
         'message' => 'The application has not been installed yet. '
-                   . 'Run migrations via: ./occ app:migrate',
+                   . 'Run migrations via: ./occ migration:run',
     ]);
     exit;
 }
@@ -75,16 +75,21 @@ $router->prefix('/api/v1', function ($router) {
         $router->post('/reviews/{id}/report',   'ReviewController@report');
         $router->post('/reviews/{id}/comments', 'ReviewController@addComment');
 
-        // Tutors & Study Groups (write actions only)
+        // Tutors
         $router->post('/tutors',                  'TutorController@store');
+        $router->delete('/tutors/{id}',             'TutorController@delete');
         $router->put('/tutors/{id}',              'TutorController@update');
+
+        // Study groups
         $router->post('/study-groups',             'StudyGroupController@store');
+        $router->delete('/study-groups/{id}',       'StudyGroupController@delete');
         $router->put('/study-groups/{id}',         'StudyGroupController@update');
         $router->post('/study-groups/{id}/join',   'StudyGroupController@join');
         $router->post('/study-groups/{id}/leave',  'StudyGroupController@leave');
 
-        // Help requests (write actions only)
+        // Help requests
         $router->post('/help-requests',              'HelpRequestController@store');
+        $router->delete('/help-requests/{id}',       'HelpRequestController@delete');
         $router->put('/help-requests/{id}',          'HelpRequestController@update');
         $router->post('/help-requests/{id}/respond', 'HelpRequestController@respond');
         $router->post('/help-requests/{id}/solve',   'HelpRequestController@solve');

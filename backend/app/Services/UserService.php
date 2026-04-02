@@ -6,7 +6,6 @@ use App\Models\User;
 use App\Models\StudyGroup;
 use App\Models\Tutor;
 use App\Models\HelpRequest;
-use App\Models\Review;
 use App\Repositories\UserRepository;
 use InvalidArgumentException;
 
@@ -73,9 +72,10 @@ class UserService
         // Delete help requests owned by user
         HelpRequest::where('user_id', $id)->delete();
 
-        // Soft-delete reviews authored by user (will show as user_id -1)
-        Review::where('user_id', $id)->delete();
-
+        // Keep reviews authored by the user.
+        // After user soft-delete, review author relation becomes null in API formatting,
+        // and frontend receives user_id = -1 for those reviews.
+        
         // Delete the user and revoke all tokens
         UserRepository::delete($user);
         $this->tokenService->revokeAllTokensForUser($id);

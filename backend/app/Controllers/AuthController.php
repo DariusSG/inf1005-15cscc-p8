@@ -16,9 +16,6 @@ use InvalidArgumentException;
 use OpenApi\Attributes as OA;
 use RuntimeException;
 
-use App\Core\OpenApiSpec; // Ensure the OpenApiSpec class is included
-
-
 #[OA\Tag(
     name: 'Authentication',
     description: 'User authentication and registration endpoints'
@@ -27,6 +24,7 @@ use App\Core\OpenApiSpec; // Ensure the OpenApiSpec class is included
     schema: "TokenResponse",
     properties: [
         new OA\Property(property: "access_token", type: "string"),
+        new OA\Property(property: "refresh_token", type: "string", nullable: true),
         new OA\Property(property: "token_type", type: "string", example: "bearer"),
         new OA\Property(property: "expires_in", type: "integer", example: 3600)
     ]
@@ -69,7 +67,7 @@ class AuthController
         $email = trim($data['email'] ?? '');
 
         if (!$email) {
-            Response::json(['error' => 'email is required'], 400);
+            Response::json(['message' => 'email is required', 'code' => 'API_ERROR'], 400);
         }
 
         try {
@@ -78,10 +76,10 @@ class AuthController
             Response::json(['message' => 'If that email is valid, a registration link has been sent.']);
         } catch (InvalidArgumentException $e) {
             Logger::channel()->error('Error at AuthController@requestRegistration', ['exception' => $e]);
-            Response::json(['error' => 'Invalid registration data'], 400);
+            Response::json(['message' => 'Invalid registration data', 'code' => 'API_ERROR'], 400);
         } catch (RuntimeException|Exception $e) {
             Logger::channel()->error('Error at AuthController@requestRegistration', ['exception' => $e]);
-            Response::json(['error' => 'An unexpected error occurred'], 500);
+            Response::json(['message' => 'An unexpected error occurred', 'code' => 'API_ERROR'], 500);
         }
     }
 
@@ -106,7 +104,7 @@ class AuthController
         $token = trim(Request::query('token', ''));
 
         if (!$token) {
-            Response::json(['error' => 'token is required'], 400);
+            Response::json(['message' => 'token is required', 'code' => 'API_ERROR'], 400);
         }
 
         try {
@@ -117,7 +115,7 @@ class AuthController
             Response::json(['email' => $this->maskEmail($email)]);
         } catch (RuntimeException $e) {
             Logger::channel()->error('Error at AuthController@checkVerifyToken', ['exception' => $e]);
-            Response::json(['error' => 'Invalid token'], 400);
+            Response::json(['message' => 'Invalid token', 'code' => 'API_ERROR'], 400);
         }
     }
 
@@ -154,7 +152,7 @@ class AuthController
         $password = $data['password']      ?? '';
 
         if (!$token || !$name || !$password) {
-            Response::json(['error' => 'token, name and password are all required'], 400);
+            Response::json(['message' => 'token, name and password are all required', 'code' => 'API_ERROR'], 400);
         }
 
         try {
@@ -165,10 +163,10 @@ class AuthController
             Response::json($tokens, 201);
         } catch (InvalidArgumentException $e) {
             Logger::channel()->error('Error at AuthController@completeRegistration', ['exception' => $e]);
-            Response::json(['error' => 'Invalid registration data'], 400);
+            Response::json(['message' => 'Invalid registration data', 'code' => 'API_ERROR'], 400);
         } catch (RuntimeException $e) {
             Logger::channel()->error('Error at AuthController@completeRegistration', ['exception' => $e]);
-            Response::json(['error' => 'Registration conflict'], 409);
+            Response::json(['message' => 'Registration conflict', 'code' => 'API_ERROR'], 409);
         }
     }
 
@@ -187,7 +185,8 @@ class AuthController
         ),
         responses: [
             new OA\Response(response: 200, description: "If the account exists, a reset email is sent"),
-            new OA\Response(response: 400, description: "Validation error", content: new OA\JsonContent(ref: "#/components/schemas/ErrorResponse"))
+            new OA\Response(response: 400, description: "Validation error", content: new OA\JsonContent(ref: "#/components/schemas/ErrorResponse")),
+            new OA\Response(response: 500, description: "Server error", content: new OA\JsonContent(ref: "#/components/schemas/ErrorResponse"))
         ]
     )]
     public function forgotPassword(): void
@@ -196,7 +195,7 @@ class AuthController
         $email = trim($data['email'] ?? '');
 
         if (!$email) {
-            Response::json(['error' => 'email is required'], 400);
+            Response::json(['message' => 'email is required', 'code' => 'API_ERROR'], 400);
         }
 
         try {
@@ -206,10 +205,10 @@ class AuthController
             ]);
         } catch (InvalidArgumentException $e) {
             Logger::channel()->error('Error at AuthController@forgotPassword', ['exception' => $e]);
-            Response::json(['error' => 'Invalid request'], 400);
+            Response::json(['message' => 'Invalid request', 'code' => 'API_ERROR'], 400);
         } catch (Exception $e) {
             Logger::channel()->error('Error at AuthController@forgotPassword', ['exception' => $e]);
-            Response::json(['error' => 'An unexpected error occurred'], 500);
+            Response::json(['message' => 'An unexpected error occurred', 'code' => 'API_ERROR'], 500);
         }
     }
 
@@ -229,7 +228,7 @@ class AuthController
     {
         $token = trim(Request::query('token', ''));
         if (!$token) {
-            Response::json(['error' => 'token is required'], 400);
+            Response::json(['message' => 'token is required', 'code' => 'API_ERROR'], 400);
         }
 
         try {
@@ -240,7 +239,7 @@ class AuthController
             ]);
         } catch (RuntimeException $e) {
             Logger::channel()->error('Error at AuthController@verifyPasswordResetToken', ['exception' => $e]);
-            Response::json(['error' => 'Invalid token'], 400);
+            Response::json(['message' => 'Invalid token', 'code' => 'API_ERROR'], 400);
         }
     }
 
@@ -270,7 +269,7 @@ class AuthController
         $password = (string)($data['password'] ?? '');
 
         if (!$token || !$password) {
-            Response::json(['error' => 'token and password are required'], 400);
+            Response::json(['message' => 'token and password are required', 'code' => 'API_ERROR'], 400);
         }
 
         try {
@@ -278,7 +277,7 @@ class AuthController
             Response::json(['message' => 'Password reset successful.']);
         } catch (InvalidArgumentException|RuntimeException $e) {
             Logger::channel()->error('Error at AuthController@resetPassword', ['exception' => $e]);
-            Response::json(['error' => 'Invalid request'], 400);
+            Response::json(['message' => 'Invalid request', 'code' => 'API_ERROR'], 400);
         }
     }
 
@@ -307,7 +306,7 @@ class AuthController
             $tokens = $this->authService->login($email, $password);
 
             if (!$tokens) {
-                Response::json(['error' => 'Invalid credentials'], 401);
+                Response::json(['message' => 'Invalid credentials', 'code' => 'API_ERROR'], 401);
             }
 
             Cookie::setRefreshToken($tokens['refresh_token'], JwtConfig::refresh_ttl());
@@ -315,7 +314,7 @@ class AuthController
             Response::json($tokens);
         } catch (\Exception $e) {
             Logger::channel()->error('Error at AuthController@login', ['exception' => $e]);
-            Response::json(['error' => 'An unexpected error occurred'], 500);
+            Response::json(['message' => 'An unexpected error occurred', 'code' => 'API_ERROR'], 500);
         }
     }
 
@@ -338,7 +337,7 @@ class AuthController
     {
         $payload = JwtMiddleware::getPayload();
         if (!$payload) {
-            Response::json(['error' => 'Unauthorized'], 401);
+            Response::json(['message' => 'Unauthorized', 'code' => 'API_ERROR'], 401);
         }
 
         try {
@@ -346,7 +345,7 @@ class AuthController
             Response::json($user);
         } catch (\Exception $e) {
             Logger::channel()->error('Error at AuthController@me', ['exception' => $e]);
-            Response::json(['error' => 'User not found'], 404);
+            Response::json(['message' => 'User not found', 'code' => 'API_ERROR'], 404);
         }
     }
 
@@ -358,14 +357,15 @@ class AuthController
         responses: [
             new OA\Response(response: 200, description: "Account deleted"),
             new OA\Response(response: 401, description: "Unauthorized", content: new OA\JsonContent(ref: "#/components/schemas/ErrorResponse")),
-            new OA\Response(response: 404, description: "User not found", content: new OA\JsonContent(ref: "#/components/schemas/ErrorResponse"))
+            new OA\Response(response: 404, description: "User not found", content: new OA\JsonContent(ref: "#/components/schemas/ErrorResponse")),
+            new OA\Response(response: 500, description: "Server error", content: new OA\JsonContent(ref: "#/components/schemas/ErrorResponse"))
         ]
     )]
     public function deleteMe(): void
     {
         $userId = JwtMiddleware::userId();
         if (!$userId) {
-            Response::json(['error' => 'Unauthorized'], 401);
+            Response::json(['message' => 'Unauthorized', 'code' => 'API_ERROR'], 401);
         }
 
         try {
@@ -374,10 +374,10 @@ class AuthController
             Response::json(['message' => 'Account deleted']);
         } catch (InvalidArgumentException $e) {
             Logger::channel()->error('Error at AuthController@deleteMe', ['exception' => $e]);
-            Response::json(['error' => $e->getMessage()], 404);
+            Response::json(['message' => $e->getMessage(), 'code' => 'API_ERROR'], 404);
         } catch (\Exception $e) {
             Logger::channel()->error('Error at AuthController@deleteMe', ['exception' => $e]);
-            Response::json(['error' => 'An unexpected error occurred'], 500);
+            Response::json(['message' => 'An unexpected error occurred', 'code' => 'API_ERROR'], 500);
         }
     }
 
@@ -399,7 +399,12 @@ class AuthController
                 content: new OA\JsonContent(ref: "#/components/schemas/TokenResponse")
             ),
             new OA\Response(
-                response: 401, 
+                response: 400,
+                description: "Refresh token missing",
+                content: new OA\JsonContent(ref: "#/components/schemas/ErrorResponse")
+            ),
+            new OA\Response(
+                response: 401,
                 description: "Unauthorized / Invalid Refresh Token",
                 content: new OA\JsonContent(ref: "#/components/schemas/ErrorResponse")
             )
@@ -411,7 +416,7 @@ class AuthController
         $refreshToken = Cookie::get('refresh_token', $data['refresh_token'] ?? null);
 
         if (!$refreshToken) {
-            Response::json(['error' => 'Refresh token required'], 400);
+            Response::json(['message' => 'Refresh token required', 'code' => 'API_ERROR'], 400);
         }
 
         try {
@@ -421,7 +426,7 @@ class AuthController
             Response::json($tokens);
         } catch (\Exception $e) {
             Logger::channel()->error('Error at AuthController@refresh', ['exception' => $e]);
-            Response::json(['error' => 'Invalid refresh token'], 401);
+            Response::json(['message' => 'Invalid refresh token', 'code' => 'API_ERROR'], 401);
         }
     }
 
@@ -447,6 +452,11 @@ class AuthController
                 )
             ),
             new OA\Response(
+                response: 400,
+                description: "Refresh token missing",
+                content: new OA\JsonContent(ref: "#/components/schemas/ErrorResponse")
+            ),
+            new OA\Response(
                 response: 401,
                 description: "Session already expired",
                 content: new OA\JsonContent(ref: "#/components/schemas/ErrorResponse")
@@ -460,7 +470,7 @@ class AuthController
         $accessToken  = $data['access_token']  ?? null;
 
         if (!$refreshToken) {
-            Response::json(['error' => 'Refresh token required'], 400);
+            Response::json(['message' => 'Refresh token required', 'code' => 'API_ERROR'], 400);
         }
 
         try {
@@ -469,7 +479,7 @@ class AuthController
             Response::json($result);
         } catch (\Exception $e) {
             Logger::channel()->error('Error at AuthController@logout', ['exception' => $e]);
-            Response::json(['error' => 'Logout failed'], 401);
+            Response::json(['message' => 'Logout failed', 'code' => 'API_ERROR'], 401);
         }
     }
 
@@ -498,7 +508,7 @@ class AuthController
     {
         $userId = JwtMiddleware::userId();
         if (!$userId) {
-            Response::json(['error' => 'Unauthorized'], 401);
+            Response::json(['message' => 'Unauthorized', 'code' => 'API_ERROR'], 401);
         }
 
         $data = Request::body();
@@ -506,7 +516,7 @@ class AuthController
         $newPassword = (string)($data['new_password'] ?? '');
 
         if (!$currentPassword || !$newPassword) {
-            Response::json(['error' => 'current_password and new_password are required'], 400);
+            Response::json(['message' => 'current_password and new_password are required', 'code' => 'API_ERROR'], 400);
         }
 
         try {
@@ -515,7 +525,7 @@ class AuthController
             Response::json(['message' => 'Password changed successfully. Please sign in again.']);
         } catch (InvalidArgumentException|RuntimeException $e) {
             Logger::channel()->error('Error at AuthController@changePassword', ['exception' => $e]);
-            Response::json(['error' => 'Invalid request'], 400);
+            Response::json(['message' => 'Invalid request', 'code' => 'API_ERROR'], 400);
         }
     }
 

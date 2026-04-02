@@ -44,7 +44,7 @@ class ReviewController
                 schema: new OA\Schema(type: "integer", minimum: 1, maximum: 100, default: 20)
             ),
             new OA\Parameter(name: "module_code", in: "query", schema: new OA\Schema(type: "string")),
-            new OA\Parameter(name: "user_id", in: "query", schema: new OA\Schema(type: "string")),
+            new OA\Parameter(name: "user_id", in: "query", schema: new OA\Schema(type: "integer", minimum: 1)),
             new OA\Parameter(name: "search", in: "query", schema: new OA\Schema(type: "string"))
         ],
         responses: [
@@ -63,11 +63,16 @@ class ReviewController
     public function index()
     {
         $userId = JwtMiddleware::userId() ?? 0;
-        $page = max(1, Request::query('page', 1));
-        $perPage = min(100, max(1, Request::query('per_page', 20)));
-        $moduleCode = Validators::moduleCode(Request::query('module_code', null));
-        $search = Validators::search(Request::query('search', null));
-        $author_id = Validators::search(Request::query('user_id', null));
+
+        try {
+            $page = max(1, Request::query('page', 1));
+            $perPage = min(100, max(1, Request::query('per_page', 20)));
+            $moduleCode = Validators::moduleCode(Request::query('module_code', null));
+            $search = Validators::search(Request::query('search', null));
+            $author_id = Validators::optionalPositiveInt(Request::query('user_id', null), 'user_id');
+        } catch (\InvalidArgumentException $e) {
+            Response::json(['message' => 'Invalid query parameters', 'code' => 'API_ERROR'], 400);
+        }
 
         $result = ReviewRepository::paginate([
             'user_id' => $userId,
@@ -114,13 +119,13 @@ class ReviewController
         $data   = Request::body();
 
         if ($role === 'admin') {
-            Response::json(['error' => 'Admins cannot write reviews'], 403);
+            Response::json(['message' => 'Admins cannot write reviews', 'code' => 'API_ERROR'], 403);
         }
 
         try {
             $moduleCode = Validators::moduleCode($data['module_code'] ?? '');
             if (!ModuleRepository::findByCode($moduleCode)) {
-                Response::json(['error' => 'Module not found'], 404);
+                Response::json(['message' => 'Module not found', 'code' => 'API_ERROR'], 404);
             }
 
             $rating = Validators::rangeCheck($data['rating'] ?? 0, 1, 5, 'Rating');
@@ -145,7 +150,7 @@ class ReviewController
             Response::json(ReviewRepository::format($review->fresh(['author', 'comments']), $userId), 201);
         } catch (\InvalidArgumentException $e) {
             Logger::channel()->error('Error at ReviewController@store', ['exception' => $e]);
-            Response::json(['error' => 'Invalid review data'], 400);
+            Response::json(['message' => 'Invalid review data', 'code' => 'API_ERROR'], 400);
         }
     }
 
@@ -176,14 +181,20 @@ class ReviewController
         $role   = JwtMiddleware::userRole();
         $data   = Request::body();
 
+        try {
+            $id = Validators::positiveInt($id, 'id');
+        } catch (\InvalidArgumentException $e) {
+            Response::json(['message' => $e->getMessage(), 'code' => 'API_ERROR'], 400);
+        }
+
         $review = ReviewRepository::find($id);
         if (!$review) {
-            Response::json(['error' => 'Review not found'], 404);
+            Response::json(['message' => 'Review not found', 'code' => 'API_ERROR'], 404);
         }
 
         // Only the author or an admin may edit
         if ($review->user_id !== $userId && $role !== 'admin') {
-            Response::json(['error' => 'Forbidden'], 403);
+            Response::json(['message' => 'Forbidden', 'code' => 'API_ERROR'], 403);
         }
 
         try {
@@ -207,7 +218,7 @@ class ReviewController
                 : $review->usefulness;
         } catch (\InvalidArgumentException $e) {
             Logger::channel()->error('Error at ReviewController@update', ['exception' => $e]);
-            Response::json(['error' => 'Invalid review data'], 400);
+            Response::json(['message' => 'Invalid review data', 'code' => 'API_ERROR'], 400);
         }
 
         $updated = ReviewRepository::update($review, compact(
@@ -241,16 +252,22 @@ class ReviewController
         $data   = Request::body();
 
         if ($role === 'admin') {
-            Response::json(['error' => 'Admins cannot vote'], 403);
+            Response::json(['message' => 'Admins cannot vote', 'code' => 'API_ERROR'], 403);
+        }
+
+        try {
+            $id = Validators::positiveInt($id, 'id');
+        } catch (\InvalidArgumentException $e) {
+            Response::json(['message' => $e->getMessage(), 'code' => 'API_ERROR'], 400);
         }
 
         $type = $data['type'] ?? '';
-        if (!in_array($type, ['up', 'down'])) {
-            Response::json(['error' => 'type must be "up" or "down"'], 400);
+        if (!in_array($type, ['up', 'down'], true)) {
+            Response::json(['message' => 'type must be "up" or "down"', 'code' => 'API_ERROR'], 400);
         }
 
         if (!ReviewRepository::find($id)) {
-            Response::json(['error' => 'Review not found'], 404);
+            Response::json(['message' => 'Review not found', 'code' => 'API_ERROR'], 404);
         }
 
         $review = ReviewRepository::toggleVote($id, $userId, $type);
@@ -290,12 +307,18 @@ class ReviewController
         $role   = JwtMiddleware::userRole();
         $data   = Request::body();
 
+        try {
+            $id = Validators::positiveInt($id, 'id');
+        } catch (\InvalidArgumentException $e) {
+            Response::json(['message' => $e->getMessage(), 'code' => 'API_ERROR'], 400);
+        }
+
         if ($role === 'admin') {
-            Response::json(['error' => 'Admins cannot report reviews'], 403);
+            Response::json(['message' => 'Admins cannot report reviews', 'code' => 'API_ERROR'], 403);
         }
 
         if (!ReviewRepository::find($id)) {
-            Response::json(['error' => 'Review not found'], 404);
+            Response::json(['message' => 'Review not found', 'code' => 'API_ERROR'], 404);
         }
 
         $isReported = ReviewRepository::toggleReport($id, $userId, $data['reason'] ?? null);
@@ -334,13 +357,15 @@ class ReviewController
         $userId = JwtMiddleware::userId();
         $data   = Request::body();
 
-        $text = trim($data['text'] ?? '');
-        if (!$text) {
-            Response::json(['error' => 'text is required'], 400);
+        try {
+            $id = Validators::positiveInt($id, 'id');
+            $text = Validators::stringCheck($data['text'] ?? '', 'text', 2000);
+        } catch (\InvalidArgumentException $e) {
+            Response::json(['message' => $e->getMessage(), 'code' => 'API_ERROR'], 400);
         }
 
         if (!ReviewRepository::find($id)) {
-            Response::json(['error' => 'Review not found'], 404);
+            Response::json(['message' => 'Review not found', 'code' => 'API_ERROR'], 404);
         }
 
         $comment = ReviewRepository::addComment($id, $userId, $text);

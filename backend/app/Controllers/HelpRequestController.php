@@ -23,7 +23,6 @@ class HelpRequestController
         path: "/help-requests",
         summary: "List help requests (paginated)",
         tags: ["Help Requests"],
-        security: [["bearerAuth" => []]],
         parameters: [
             new OA\Parameter(
                 parameter: "QueryPage",
@@ -40,7 +39,7 @@ class HelpRequestController
                 schema: new OA\Schema(type: "integer", minimum: 1, maximum: 100, default: 20)
             ),
             new OA\Parameter(name: "module_code", in: "query", schema: new OA\Schema(type: "string")),
-            new OA\Parameter(name: "user_id", in: "query", schema: new OA\Schema(type: "string")),
+            new OA\Parameter(name: "user_id", in: "query", schema: new OA\Schema(type: "integer", minimum: 1)),
             new OA\Parameter(name: "search", in: "query", schema: new OA\Schema(type: "string"))
         ],
         responses: [
@@ -58,12 +57,15 @@ class HelpRequestController
     )]
     public function index()
     {
-        $page = max(1, Request::query('page', 1));
-        $perPage = min(100, max(1, Request::query('per_page', 20)));
-        $moduleCode = Validators::moduleCode(Request::query('module_code', null));
-        $search = Validators::search(Request::query('search', null));
-        $author_id = Validators::search(Request::query('user_id', null));
-        
+        try {
+            $page = max(1, Request::query('page', 1));
+            $perPage = min(100, max(1, Request::query('per_page', 20)));
+            $moduleCode = Validators::moduleCode(Request::query('module_code', null));
+            $search = Validators::search(Request::query('search', null));
+            $author_id = Validators::optionalPositiveInt(Request::query('user_id', null), 'user_id');
+        } catch (InvalidArgumentException $e) {
+            Response::json(['message' => 'Invalid query parameters', 'code' => 'API_ERROR'], 400);
+        }
 
         $result = HelpRequestRepository::paginate([
             'module_code' => $moduleCode,
@@ -81,7 +83,6 @@ class HelpRequestController
         path: "/help-requests/{id}",
         summary: "Get a single help request",
         tags: ["Help Requests"],
-        security: [["bearerAuth" => []]],
         parameters: [
             new OA\Parameter(
                 name: "id",
@@ -107,9 +108,15 @@ class HelpRequestController
     )]
     public function show(int $id)
     {
+        try {
+            $id = Validators::positiveInt($id, 'id');
+        } catch (InvalidArgumentException $e) {
+            Response::json(['message' => $e->getMessage(), 'code' => 'API_ERROR'], 400);
+        }
+
         $req = HelpRequestRepository::find($id);
         if (!$req) {
-            Response::json(['error' => 'Not found'], 404);
+            Response::json(['message' => 'Not found', 'code' => 'API_ERROR'], 404);
         }
         Response::json(HelpRequestRepository::format($req));
     }
@@ -230,7 +237,7 @@ class HelpRequestController
             Response::json(HelpRequestRepository::format($req), 201);
         } catch (InvalidArgumentException $e) {
             Logger::channel()->error('Error at HelpRequestController@store', ['exception' => $e]);
-            Response::json(['error' => 'Invalid request'], 400);
+            Response::json(['message' => 'Invalid request', 'code' => 'API_ERROR'], 400);
         }
     }
 
@@ -266,13 +273,15 @@ class HelpRequestController
         $userId = JwtMiddleware::userId();
         $data   = Request::body();
 
-        $content = trim($data['content'] ?? '');
-        if (!$content) {
-            Response::json(['error' => 'content is required'], 400);
+        try {
+            $id = Validators::positiveInt($id, 'id');
+            $content = Validators::stringCheck($data['content'] ?? '', 'content', 5000);
+        } catch (InvalidArgumentException $e) {
+            Response::json(['message' => $e->getMessage(), 'code' => 'API_ERROR'], 400);
         }
 
         if (!HelpRequestRepository::find($id)) {
-            Response::json(['error' => 'Help request not found'], 404);
+            Response::json(['message' => 'Help request not found', 'code' => 'API_ERROR'], 404);
         }
 
         $response = HelpRequestRepository::addResponse($id, $userId, $content);
@@ -316,16 +325,60 @@ class HelpRequestController
         $userId = JwtMiddleware::userId();
         $role   = JwtMiddleware::userRole();
 
+        try {
+            $id = Validators::positiveInt($id, 'id');
+        } catch (InvalidArgumentException $e) {
+            Response::json(['message' => $e->getMessage(), 'code' => 'API_ERROR'], 400);
+        }
+
         $req = HelpRequestRepository::find($id);
         if (!$req) {
-            Response::json(['error' => 'Help request not found'], 404);
+            Response::json(['message' => 'Help request not found', 'code' => 'API_ERROR'], 404);
         }
 
         // Only the owner or an admin can mark as solved
         if ($req->user_id !== $userId && $role !== 'admin') {
-            Response::json(['error' => 'Forbidden'], 403);
+            Response::json(['message' => 'Forbidden', 'code' => 'API_ERROR'], 403);
         }
 
         Response::json(HelpRequestRepository::format(HelpRequestRepository::markSolved($id)));
+    }
+
+    #[OA\Delete(
+        path: "/help-requests/{id}",
+        summary: "Delete a help request",
+        tags: ["Help Requests"],
+        security: [["bearerAuth" => []]],
+        parameters: [
+            new OA\Parameter(name: "id", in: "path", required: true, schema: new OA\Schema(type: "integer", minimum: 1))
+        ],
+        responses: [
+            new OA\Response(response: 200, description: "Help request deleted"),
+            new OA\Response(response: 403, description: "Forbidden"),
+            new OA\Response(response: 404, description: "Help request not found")
+        ]
+    )]
+    public function delete(int $id): void
+    {
+        $userId = JwtMiddleware::userId();
+        $role   = JwtMiddleware::userRole();
+
+        try {
+            $id = Validators::positiveInt($id, 'id');
+        } catch (InvalidArgumentException $e) {
+            Response::json(['message' => $e->getMessage(), 'code' => 'API_ERROR'], 400);
+        }
+
+        $req = HelpRequestRepository::find($id);
+        if (!$req) {
+            Response::json(['message' => 'Help request not found', 'code' => 'API_ERROR'], 404);
+        }
+
+        if ($req->user_id !== $userId && $role !== 'admin') {
+            Response::json(['message' => 'Forbidden', 'code' => 'API_ERROR'], 403);
+        }
+
+        HelpRequestRepository::delete($id);
+        Response::json(['message' => 'Help request deleted']);
     }
 }

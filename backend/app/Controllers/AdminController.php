@@ -25,12 +25,6 @@ use OpenApi\Attributes as OA;
     name: 'Admin',
     description: 'Administrative operations (admin role required)'
 )]
-#[OA\Schema(
-    schema: "ErrorResponse",
-    properties: [
-        new OA\Property(property: "error", type: "string", example: "Invalid credentials")
-    ]
-)]
 #[OA\Response(
     response: "Forbidden",
     description: "Access denied",
@@ -40,16 +34,6 @@ use OpenApi\Attributes as OA;
     response: "NotFound",
     description: "Resource not found",
     content: new OA\JsonContent(ref: "#/components/schemas/ErrorResponse")
-)]
-#[OA\Schema(
-    schema: 'PaginationMeta',
-    type: 'object',
-    properties: [
-        new OA\Property(property: 'total', type: 'integer', description: 'Total number of items', example: 150),
-        new OA\Property(property: 'per_page', type: 'integer', description: 'Items per page', example: 20),
-        new OA\Property(property: 'current_page', type: 'integer', description: 'Current page number', example: 1),
-        new OA\Property(property: 'last_page', type: 'integer', description: 'Last page number', example: 8)
-    ]
 )]
 readonly class AdminController
 {
@@ -137,7 +121,7 @@ readonly class AdminController
         $userId = Request::query('user_id');
 
         if (!$reviewId || !$userId) {
-            Response::json(['error' => 'review_id and user_id are required'], 400);
+            Response::json(['message' => 'review_id and user_id are required', 'code' => 'API_ERROR'], 400);
             return;
         }
 
@@ -146,7 +130,7 @@ readonly class AdminController
             Response::json(['message' => 'Action completed successfully']);
         } catch (Exception $e) {
             Logger::channel()->error('Error at AdminController@reportReviews_delete', ['exception' => $e]);
-            Response::json(['error' => 'An unexpected error occurred'], 500);
+            Response::json(['message' => 'An unexpected error occurred', 'code' => 'API_ERROR'], 500);
         }
     }
 
@@ -228,7 +212,7 @@ readonly class AdminController
             Response::json($user);
         } catch (Exception $e) {
             Logger::channel()->error('Error at AdminController@user_show', ['exception' => $e]);
-            Response::json(["error" => $e->getMessage()], 404);
+            Response::json(['message' => $e->getMessage(), 'code' => 'API_ERROR'], 404);
         }
     }
 
@@ -258,10 +242,10 @@ readonly class AdminController
             Response::json(['message' => 'User deleted']);
         } catch (InvalidArgumentException $e) {
             Logger::channel()->error('Error at AdminController@user_delete', ['exception' => $e]);
-            Response::json(['error' => $e->getMessage()], 404);
+            Response::json(['message' => $e->getMessage(), 'code' => 'API_ERROR'], 404);
         } catch (Exception $e) {
             Logger::channel()->error('Error at AdminController@user_delete', ['exception' => $e]);
-            Response::json(['error' => 'An unexpected error occurred'], 500);
+            Response::json(['message' => 'An unexpected error occurred', 'code' => 'API_ERROR'], 500);
         }
     }
 
@@ -412,7 +396,7 @@ readonly class AdminController
             }
 
             if (ModuleRepository::findByCode($code)) {
-                Response::json(['error' => 'Module already exists'], 409);
+                Response::json(['message' => 'Module already exists', 'code' => 'API_ERROR'], 409);
                 return;
             }
 
@@ -452,7 +436,8 @@ readonly class AdminController
 
                 if (!empty($missing)) {
                     Response::json([
-                        'error' => 'Some prerequisite modules do not exist',
+                        'message' => 'Some prerequisite modules do not exist',
+                        'code' => 'API_ERROR',
                         'missing_prereqs' => array_values($missing),
                     ], 400);
                 }
@@ -479,10 +464,10 @@ readonly class AdminController
 
         } catch (InvalidArgumentException $e) {
             Logger::channel()->error('Error at AdminController@module_store', ['exception' => $e]);
-            Response::json(['error' => 'Invalid module data'], 400);
+            Response::json(['message' => 'Invalid module data', 'code' => 'API_ERROR'], 400);
         } catch (Exception $e) {
             Logger::channel()->error('Error at AdminController@module_store', ['exception' => $e]);
-            Response::json(['error' => 'An unexpected error occurred'], 500);
+            Response::json(['message' => 'An unexpected error occurred', 'code' => 'API_ERROR'], 500);
         }
     }
 }

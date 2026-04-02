@@ -147,6 +147,16 @@ class StudyGroupRepository extends BaseRepository
         ];
     }
 
+    public static function delete(int $id): bool
+    {
+        $group = StudyGroup::find($id);
+        if (!$group) {
+            return false;
+        }
+
+        return (bool) $group->delete();
+    }
+
     public static function format(StudyGroup $group): array
     {
         return [
