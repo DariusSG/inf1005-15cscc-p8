@@ -102,7 +102,7 @@ export default function StudyGroups() {
       {createOpen && <CreateGroupModal onClose={() => setCreateOpen(false)} onSaved={load} />}
 
       <div className="section-header">
-        <h2>Study Groups</h2>
+        <h1>Study Groups</h1>
         <p className="sub">Find or create study groups for your modules</p>
       </div>
       <div className="controls-row">
@@ -110,7 +110,7 @@ export default function StudyGroups() {
           <span className="si-icon"></span>
           <input
             type="text"
-            placeholder="Search groups by module or name..."
+            placeholder="Search groups by their name..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />

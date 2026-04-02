@@ -25,7 +25,7 @@ function AppLayout({ children }) {
             <Sidebar />
             <div className="right-area">
                 <Topbar onSignIn={() => setAuthOpen(true)} />
-                <div className="content">{children}</div>
+                <main className="content">{children}</main>
             </div>
             {authOpen && <AuthModal onClose={() => setAuthOpen(false)} />}
         </div>

@@ -10,7 +10,7 @@
     --bg-input: #1a1a20;
     --text-primary: #e4e2ec;
     --text-secondary: #9a98a8;
-    --text-muted: #5f5d6e;
+    --text-muted: #8a8898;
     --accent: #e05a3a;
     --accent-hover: #f06a4a;
     --accent-glow: rgba(224, 90, 58, 0.2);
@@ -152,21 +152,8 @@ textarea {
     gap: 9px;
     padding: 0 18px;
     border-bottom: 1px solid var(--border);
-    cursor: pointer
-}
-
-.sidebar-brand .logo {
-    width: 28px;
-    height: 28px;
-    border-radius: 7px;
-    background: var(--accent);
-    display: flex;
-    align-items: center;
+    cursor: pointer;
     justify-content: center;
-    font-family: var(--mono);
-    font-size: 0.7rem;
-    font-weight: 700;
-    color: #fff
 }
 
 .sidebar-brand span {
@@ -1482,94 +1469,85 @@ textarea {
 .welcome-page {
     height: 100%;
     display: flex;
-    flex-direction: column;
     align-items: center;
     justify-content: center;
-    text-align: center;
     position: relative;
     overflow: hidden;
-    padding: 40px 28px
+    padding: 40px 48px
 }
 
 .welcome-page::before {
     content: '';
     position: absolute;
     top: -200px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 800px;
-    height: 800px;
+    left: 0;
+    width: 600px;
+    height: 600px;
     background: radial-gradient(circle, var(--accent-glow) 0%, transparent 65%);
     pointer-events: none;
-    opacity: 0.4
+    opacity: 0.35
 }
 
-.welcome-hero {
-    position: relative;
-    z-index: 1;
-    margin-bottom: 40px
-}
-
-.welcome-logo {
-    width: 64px;
-    height: 64px;
-    border-radius: 16px;
-    background: var(--accent);
+.welcome-layout {
     display: flex;
     align-items: center;
-    justify-content: center;
-    font-family: var(--mono);
-    font-size: 1.4rem;
-    font-weight: 700;
-    color: #fff;
-    margin: 0 auto 20px;
-    animation: float 4s ease-in-out infinite;
-    box-shadow: 0 12px 40px var(--accent-glow)
-}
-
-.welcome-hero h1 {
-    font-size: 2.4rem;
-    font-weight: 800;
-    letter-spacing: -1px;
-    line-height: 1.15;
-    margin-bottom: 10px
-}
-
-.welcome-hero h1 .highlight {
-    background: linear-gradient(90deg, var(--accent), var(--orange), var(--accent));
-    background-size: 200% auto;
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    animation: gradientShift 4s ease infinite
-}
-
-.welcome-hero .tagline {
-    font-size: 1rem;
-    color: var(--text-secondary);
-    max-width: 420px;
-    margin: 0 auto;
-    line-height: 1.6
-}
-
-.home-cards {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 18px;
-    max-width: 820px;
+    gap: 56px;
+    max-width: 1000px;
     width: 100%;
     position: relative;
     z-index: 1
+}
+
+.welcome-left {
+    flex: 1;
+    min-width: 0
+}
+
+.welcome-hero {
+    margin-bottom: 36px
+}
+
+.welcome-eyebrow {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 14px
+}
+
+.welcome-hero h1 {
+    font-size: 2.6rem;
+    font-weight: 800;
+    letter-spacing: -1.5px;
+    line-height: 1.12;
+    margin-bottom: 16px
+}
+
+.welcome-hero .tagline {
+    font-size: 0.95rem;
+    color: var(--text-secondary);
+    max-width: 440px;
+    line-height: 1.7
+}
+
+.home-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    width: 300px;
+    flex-shrink: 0
 }
 
 .home-card {
     background: var(--bg-card);
     border: 1px solid var(--border);
     border-radius: var(--radius-lg);
-    padding: 28px 22px;
+    padding: 20px 22px;
     cursor: pointer;
     transition: all 0.25s ease;
-    text-align: center;
+    text-align: left;
     position: relative;
     overflow: hidden
 }
@@ -1645,7 +1623,7 @@ textarea {
     color: var(--text-muted);
     display: flex;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start;
     gap: 5px
 }
 
@@ -1668,9 +1646,8 @@ textarea {
 }
 
 .welcome-footer {
-    margin-top: 36px;
     display: flex;
-    gap: 30px;
+    gap: 28px;
     position: relative;
     z-index: 1
 }
@@ -1724,8 +1701,18 @@ textarea {
         flex-direction: column
     }
 
+    .welcome-layout {
+        flex-direction: column;
+        gap: 32px;
+        padding: 0
+    }
+
+    .welcome-page {
+        padding: 32px 20px;
+        align-items: flex-start
+    }
+
     .home-cards {
-        grid-template-columns: 1fr;
-        max-width: 360px
+        width: 100%
     }
 }

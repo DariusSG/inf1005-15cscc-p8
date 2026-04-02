@@ -16,8 +16,9 @@ export default function Sidebar() {
   return (
     <aside className="sidebar">
       <div className="sidebar-brand" onClick={() => navigate('/')}>
-        <div className="logo">SM</div>
-        <span>SIT<em>Mods</em></span>
+        <span>SIT
+            <em>Mods</em>
+        </span>
       </div>
       <nav className="sidebar-nav">
         {links.map(({ to, label, icon, end }) => (
@@ -53,7 +54,7 @@ export default function Sidebar() {
           </>
         )}
       </nav>
-      <div className="sidebar-footer">SITMods v2.0<br />&copy; 2025 SIT Students</div>
+      <div className="sidebar-footer">SITizens v67.0<br />&copy; Darius, Yu Xuan, Ray, Gibson, Kai Le</div>
     </aside>
   );
 }

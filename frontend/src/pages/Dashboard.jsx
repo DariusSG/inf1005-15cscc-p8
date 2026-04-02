@@ -42,7 +42,7 @@ function ChangePasswordSection() {
 
     return (
         <div className="dash-section">
-            <h3
+            <h2
                 style={{ cursor: 'pointer', userSelect: 'none' }}
                 onClick={() => { setOpen((o) => !o); reset(); }}
             >
@@ -50,7 +50,7 @@ function ChangePasswordSection() {
                 <span style={{ marginLeft: 'auto', fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 400 }}>
           {open ? '▲ collapse' : '▼ expand'}
         </span>
-            </h3>
+            </h2>
 
             {open && (
                 <div style={{ maxWidth: 400 }}>
@@ -158,13 +158,13 @@ export default function Dashboard() {
     return (
         <div className="page-section">
             <div className="section-header">
-                <h2>My Dashboard</h2>
+                <h1>My Dashboard</h1>
                 <p className="sub">Manage your reviews, tutoring offerings, and help requests</p>
             </div>
 
             {/* Reviews */}
             <div className="dash-section">
-                <h3> My Reviews <span className="count">{myReviews.length}</span></h3>
+                <h2> My Reviews <span className="count">{myReviews.length}</span></h2>
                 {myReviews.length === 0 ? (
                     <p style={{ color: 'var(--text-muted)', fontSize: '0.86rem' }}>No reviews yet.</p>
                 ) : myReviews.map((r) => (
@@ -184,7 +184,7 @@ export default function Dashboard() {
 
             {/* Tutor listings */}
             <div className="dash-section">
-                <h3>My Tutor Listings <span className="count">{myTutors.length}/5</span></h3>
+                <h2>My Tutor Listings <span className="count">{myTutors.length}/5</span></h2>
                 {myTutors.length === 0 ? (
                     <p style={{ color: 'var(--text-muted)', fontSize: '0.86rem' }}>No tutor listings.</p>
                 ) : myTutors.map((t) => (
@@ -202,7 +202,7 @@ export default function Dashboard() {
 
             {/* Help requests */}
             <div className="dash-section">
-                <h3> My Help Requests <span className="count">{openHelp.length}/5 open</span></h3>
+                <h2> My Help Requests <span className="count">{openHelp.length}/5 open</span></h2>
                 {myHelp.length === 0 ? (
                     <p style={{ color: 'var(--text-muted)', fontSize: '0.86rem' }}>No help requests.</p>
                 ) : myHelp.map((h) => (

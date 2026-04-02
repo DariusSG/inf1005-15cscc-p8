@@ -25,7 +25,7 @@ function ContactModal({ tutor, onClose }) {
           </div>
         </div>
         <div className="info-row"><span className="info-label">Modules</span><span className="info-value">{(tutor.modules || []).join(', ')}</span></div>
-        <div className="info-row"><span className="info-label">Rate</span><span className="info-value" style={{ color: 'var(--green)' }}>{tutor.rate}</span></div>
+        <div className="info-row"><span className="info-label">Rate</span><span className="info-value" style={{ color: 'var(--green)' }}>S${tutor.rate}</span></div>
         <div className="info-row"><span className="info-label">Contact Email</span><span className="info-value"><a href={`mailto:${tutor.contactEmail}`}>{tutor.contactEmail}</a></span></div>
         <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: 16, textAlign: 'center' }}>
           Reach out via the email above to arrange a session.
@@ -166,7 +166,7 @@ export default function Tutors() {
       {contactTutor && <ContactModal tutor={contactTutor} onClose={() => setContactTutor(null)} />}
       {offerOpen && <OfferTutorModal onClose={() => setOfferOpen(false)} onSaved={load} />}
       <div className="section-header">
-        <h2>Tutor Finder</h2>
+        <h1>Tutor Finder</h1>
         <p className="sub">Find peer tutors or offer your tutoring services</p>
       </div>
       <div className="controls-row">
@@ -190,7 +190,7 @@ export default function Tutors() {
                 ))}
               </div>
               <div className="tbio">{t.bio}</div>
-              <span className="trate">{t.rate}</span>
+              <span className="trate">S${t.rate}</span>
             </div>
             <div style={{ alignSelf: 'center' }}>
               <button className="btn btn-secondary btn-sm" onClick={() => setContactTutor(t)}>View Info</button>

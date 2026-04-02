@@ -5,11 +5,6 @@ import { Loading, Empty, FacTag } from '../components/Shared';
 
 const FACULTIES = ['All', 'ICT', 'Business', 'Engineering', 'HSS'];
 
-function avgRating(reviews = []) {
-  if (!reviews.length) return 0;
-  return (reviews.reduce((s, r) => s + r.rating, 0) / reviews.length).toFixed(1);
-}
-
 export default function Modules() {
   const [modules, setModules] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -36,7 +31,7 @@ export default function Modules() {
   return (
     <div className="page-section">
       <div className="section-header">
-        <h2>Modules</h2>
+        <h1>Modules</h1>
         <p className="sub">Browse and review SIT modules across all faculties</p>
       </div>
 
@@ -71,7 +66,8 @@ export default function Modules() {
       ) : (
         <div className="mod-grid">
           {filtered.map((m, i) => {
-            const avg = avgRating(m.reviews);
+            const avg = m.reviews_avg_rating ? parseFloat(m.reviews_avg_rating).toFixed(1) : null;
+            const count = m.reviews_count || 0;
             return (
               <div
                 key={m.code}
@@ -84,8 +80,8 @@ export default function Modules() {
                 <div className="name">{m.name}</div>
                 <div className="desc">{m.description || m.desc}</div>
                 <div className="meta">
-                  <span className="rating">{avg > 0 ? `★ ${avg}` : 'No ratings'}</span>
-                  <span>{(m.reviews || []).length} review{(m.reviews || []).length !== 1 ? 's' : ''}</span>
+                  <span className="rating">{avg ? `★ ${avg}` : 'No ratings'}</span>
+                  <span>{count} review{count !== 1 ? 's' : ''}</span>
                   <span className="cu">{m.credits} CU</span>
                 </div>
               </div>

@@ -26,7 +26,7 @@ function WriteReviewModal({ module, review, onClose, onSaved }) {
     if (contentErr) { toast.error(contentErr); return; }
 
     const payload = {
-      module_code: module.code,
+      moduleCode: module.code,
       rating: cleanRating,
       title: cleanTitle,
       content: cleanContent,
@@ -258,7 +258,7 @@ export default function ModuleDetail() {
         <div>
           <FacTag faculty={mod.faculty} />
           <div style={{ fontFamily: 'var(--mono)', fontSize: '0.82rem', color: 'var(--text-muted)', margin: '5px 0 3px' }}>{mod.code}</div>
-          <h2 style={{ fontSize: '1.3rem', fontWeight: 700 }}>{mod.name}</h2>
+          <h1 style={{ fontSize: '1.3rem', fontWeight: 700 }}>{mod.name}</h1>
         </div>
         <div style={{ textAlign: 'right' }}>
           <div style={{ fontSize: '1.8rem', fontFamily: 'var(--mono)', fontWeight: 700, color: 'var(--orange)' }}>{avg || '—'}</div>

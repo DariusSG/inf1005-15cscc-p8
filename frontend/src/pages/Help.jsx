@@ -20,7 +20,6 @@ function HelpDetailModal({ help, onClose }) {
         <div className="info-row"><span className="info-label">Urgency</span><span className="info-value"><UrgencyBadge urgency={help.urgency} /></span></div>
         <div className="info-row"><span className="info-label">Bounty</span><span className="info-value">{help.hasBounty ? <BountyTag amount={help.bountyAmount} /> : 'None'}</span></div>
         <div className="info-row"><span className="info-label">Status</span><span className="info-value">{help.status === 'solved' ? <SolvedTag /> : <span style={{ color: 'var(--blue)' }}>Open</span>}</span></div>
-        <div className="info-row"><span className="info-label">Responses</span><span className="info-value">{help.responses || 0}</span></div>
         <div className="info-row"><span className="info-label">Contact</span><span className="info-value"><a href={`mailto:${help.contactEmail}`}>{help.contactEmail}</a></span></div>
         <div className="info-row" style={{ borderBottom: 'none' }}><span className="info-label">Description</span></div>
         <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', padding: '4px 0 16px' }}>{help.description || help.desc}</p>
@@ -53,6 +52,7 @@ function CreateHelpModal({ onClose, onSaved }) {
   const submit = async () => {
     const { value: cleanTitle, error: titleErr } = requireField(title, 'Title', 'title');
     if (titleErr) { toast.error(titleErr); return; }
+    if (!moduleCode) { toast.error('Select a module'); return; }
     const { value: cleanDesc, error: descErr } = requireField(desc, 'Description', 'content');
     if (descErr) { toast.error(descErr); return; }
     const { value: cleanHandle, error: handleErr } = requireField(handle, 'Email', 'name');
@@ -176,7 +176,7 @@ export default function Help() {
       {detailItem && <HelpDetailModal help={detailItem} onClose={() => setDetailItem(null)} />}
       {createOpen && <CreateHelpModal onClose={() => setCreateOpen(false)} onSaved={load} />}
       <div className="section-header">
-        <h2>Help Finder</h2>
+        <h1>Help Finder</h1>
         <p className="sub">Need help with a module? Post a request and connect with students who can help</p>
       </div>
       <div className="controls-row">
@@ -203,7 +203,7 @@ export default function Help() {
               </div>
               <div className="help-desc">{h.description || h.desc}</div>
               <div className="help-footer">
-                <span className="help-meta">{(h.contactEmail || '').split('@')[0]} · {h.responses || 0} response{h.responses !== 1 ? 's' : ''}</span>
+                <span className="help-meta">{(h.contactEmail || '').split('@')[0]}</span>
                 <div className="help-actions">
                   {isOwn && !solved && <button className="btn btn-success btn-sm" onClick={() => handleSolve(h.id)}>✓ Solved</button>}
                   {!isOwn && <button className="btn btn-secondary btn-sm" onClick={() => setDetailItem(h)}>View Details</button>}
