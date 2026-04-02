@@ -532,7 +532,8 @@ textarea {
 
 .page-section {
     padding: 28px 28px 60px;
-    animation: fadeUp 0.35s ease forwards
+    animation: fadeUp 0.35s ease forwards;
+    min-height: 100%
 }
 
 .section-header {
@@ -781,7 +782,9 @@ textarea {
 
 .modal-body {
     padding: 20px 24px 24px;
-    overflow-y: auto
+    overflow-y: auto;
+    flex: 1;
+    min-height: 0
 }
 
 .modal-sm {
