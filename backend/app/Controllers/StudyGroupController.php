@@ -37,7 +37,10 @@ class StudyGroupController
                 in: "query",
                 required: false,
                 schema: new OA\Schema(type: "integer", minimum: 1, maximum: 100, default: 20)
-            )
+            ),
+            new OA\Parameter(name: "module_code", in: "query", schema: new OA\Schema(type: "string")),
+            new OA\Parameter(name: "user_id", in: "query", schema: new OA\Schema(type: "string")),
+            new OA\Parameter(name: "search", in: "query", schema: new OA\Schema(type: "string"))
         ],
         responses: [
             new OA\Response(
@@ -57,10 +60,14 @@ class StudyGroupController
     {
         $page = max(1, Request::query('page', 1));
         $perPage = min(100, max(1, Request::query('per_page', 20)));
-        $search = Request::query('search', null);
+        $moduleCode = Validators::moduleCode(Request::query('module_code', null));
+        $search = Validators::search(Request::query('search', null));
+        $author_id = Validators::search(Request::query('user_id', null));
 
         $result = StudyGroupRepository::paginate([
+            'module_code' => $moduleCode,
             'search' => $search,
+            'author_id' => $author_id,
         ], $perPage, $page);
 
         Response::json([

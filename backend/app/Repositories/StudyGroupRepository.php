@@ -23,9 +23,19 @@ class StudyGroupRepository extends BaseRepository
 {
     public static function paginate(array $filters = [], int $perPage = 20, int $page = 1): array
     {
-        $search = $filters['search'] ?? null;
+        $moduleCode = $filters['module_code'] ?? null;
+        $search     = $filters['search'] ?? null;
+        $authorId   = $filters['author_id'] ?? null;
 
         $query = StudyGroup::with('creator:id,name,email');
+
+        if ($moduleCode) {
+            $query->where('module_code', $moduleCode);
+        }
+
+        if ($authorId) {
+            $query->where('user_id', $authorId);
+         }
 
         if ($search) {
             $escaped = self::escapeSearch($search);
