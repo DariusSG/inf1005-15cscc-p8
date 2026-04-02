@@ -56,6 +56,8 @@ $router->prefix('/api/v1', function ($router) {
         $router->get('/admin/reviews/report',    'AdminController@reportedReviews_show');
         $router->delete('/admin/reviews/report', 'AdminController@reportedReviews_delete');
         $router->post('/admin/modules',          'AdminController@module_store');
+        $router->put('/admin/modules/{code}',    'AdminController@module_update');
+        $router->delete('/admin/modules/{code}', 'AdminController@module_destroy');
     });
 
     // --- General Authenticated Section ---
@@ -75,12 +77,15 @@ $router->prefix('/api/v1', function ($router) {
 
         // Tutors & Study Groups (write actions only)
         $router->post('/tutors',                  'TutorController@store');
+        $router->put('/tutors/{id}',              'TutorController@update');
         $router->post('/study-groups',             'StudyGroupController@store');
+        $router->put('/study-groups/{id}',         'StudyGroupController@update');
         $router->post('/study-groups/{id}/join',   'StudyGroupController@join');
         $router->post('/study-groups/{id}/leave',  'StudyGroupController@leave');
 
         // Help requests (write actions only)
         $router->post('/help-requests',              'HelpRequestController@store');
+        $router->put('/help-requests/{id}',          'HelpRequestController@update');
         $router->post('/help-requests/{id}/respond', 'HelpRequestController@respond');
         $router->post('/help-requests/{id}/solve',   'HelpRequestController@solve');
     });

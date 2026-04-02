@@ -92,6 +92,15 @@ class StudyGroupRepository extends BaseRepository
         return $q->latest()->get()->map(fn($g) => self::format($g))->all();
     }
 
+    public static function update(int $id, array $data): StudyGroup
+    {
+        $group = StudyGroup::findOrFail($id);
+        if (!empty($data)) {
+            $group->update($data);
+        }
+        return self::find($id);
+    }
+
     public static function create(array $data): StudyGroup
     {
         $group = StudyGroup::create($data);

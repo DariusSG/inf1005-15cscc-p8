@@ -98,6 +98,36 @@ class ModuleRepository extends BaseRepository
 
 
     /**
+     * @throws Throwable
+     */
+    public static function update(string $code, array $data, ?array $semesters = null, ?array $prereqs = null): Module
+    {
+        return Capsule::connection()->transaction(function () use ($code, $data, $semesters, $prereqs) {
+            $module = Module::where('code', $code)->firstOrFail();
+            if (!empty($data)) {
+                $module->update($data);
+            }
+            if ($semesters !== null) {
+                $module->semesters()->delete();
+                if (!empty($semesters)) {
+                    $module->semesters()->createMany(
+                        array_map(fn($s) => ['semester' => $s], $semesters)
+                    );
+                }
+            }
+            if ($prereqs !== null) {
+                $module->prereqs()->sync($prereqs);
+            }
+            return $module->fresh(['prereqs', 'semesters']);
+        });
+    }
+
+    public static function delete(string $code): void
+    {
+        Module::where('code', $code)->delete();
+    }
+
+    /**
      * Expected keys: code, name, description?, faculty?, credits?, semesters?, prereqs?
      * @throws Throwable
      */

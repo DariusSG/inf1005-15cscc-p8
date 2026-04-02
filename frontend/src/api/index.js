@@ -37,6 +37,9 @@ export const getTutors = (params) =>
 export const postTutor = (data) =>
   client.post('/tutors', data).then((r) => r.data);
 
+export const putTutor = (id, data) =>
+  client.put(`/tutors/${id}`, data).then((r) => r.data);
+
 // ── Help Requests ─────────────────────────────────────────
 export const getHelpRequests = (params) =>
   client.get('/help-requests', { params }).then((r) => r.data);
@@ -53,6 +56,9 @@ export const postHelpRespond = (id, content) =>
 export const postHelpSolve = (id) =>
   client.post(`/help-requests/${id}/solve`).then((r) => r.data);
 
+export const putHelpRequest = (id, data) =>
+  client.put(`/help-requests/${id}`, data).then((r) => r.data);
+
 // ── Study Groups ──────────────────────────────────────────
 export const getStudyGroups = (params) =>
   client.get('/study-groups', { params }).then((r) => r.data);
@@ -60,12 +66,21 @@ export const getStudyGroups = (params) =>
 export const postStudyGroup = (data) =>
   client.post('/study-groups', data).then((r) => r.data);
 
+export const putStudyGroup = (id, data) =>
+  client.put(`/study-groups/${id}`, data).then((r) => r.data);
+
 // ── Admin ─────────────────────────────────────────────────
 export const getReportedReviews = (params) =>
   client.get('/admin/reviews/report', { params }).then((r) => r.data);
 
 export const adminCreateModule = (data) =>
     client.post('/admin/modules', data).then((r) => r.data);
+
+export const adminUpdateModule = (code, data) =>
+  client.put(`/admin/modules/${code}`, data).then((r) => r.data);
+
+export const adminDeleteModule = (code) =>
+  client.delete(`/admin/modules/${code}`).then((r) => r.data);
 // ── Users ─────────────────────────────────────────────────
 export const getUsers = (params) =>
   client.get('/users', { params }).then((r) => r.data);

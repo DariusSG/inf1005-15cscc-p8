@@ -95,6 +95,23 @@ class TutorRepository extends BaseRepository
      * Create a tutor listing.
      * $data may include 'module_codes' (array of strings) for the pivot.
      */
+    public static function find(int $id): ?Tutor
+    {
+        return Tutor::with(['user:id,email', 'modules:code,name'])->find($id);
+    }
+
+    public static function update(int $id, array $data, ?array $moduleCodes = null): Tutor
+    {
+        $tutor = Tutor::findOrFail($id);
+        if (!empty($data)) {
+            $tutor->update($data);
+        }
+        if ($moduleCodes !== null) {
+            $tutor->modules()->sync(array_map('strtoupper', $moduleCodes));
+        }
+        return $tutor->fresh(['user:id,email', 'modules:code,name']);
+    }
+
     public static function create(array $data): Tutor
     {
         $moduleCodes = $data['module_codes'] ?? [];

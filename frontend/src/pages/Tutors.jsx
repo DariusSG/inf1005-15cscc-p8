@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getTutors, postTutor, getModules } from '../api/index';
+import { getTutors, postTutor, putTutor, getModules } from '../api/index';
 import { useAuth } from '../context/AuthContext';
 import { sanitiseField, sanitiseEmail, sanitiseModuleCodes, requireField } from '../utils/sanitise';
 import { Loading, Empty, Avatar } from '../components/Shared';
@@ -30,6 +30,104 @@ function ContactModal({ tutor, onClose }) {
         <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: 16, textAlign: 'center' }}>
           Reach out via the email above to arrange a session.
         </p>
+      </div>
+    </Modal>
+  );
+}
+
+function EditTutorModal({ tutor, onClose, onSaved }) {
+  const [modules, setModules] = useState([]);
+  const [selectedMods, setSelectedMods] = useState(tutor.modules || []);
+  const [rate, setRate] = useState(
+    Object.entries(RATE_TO_NUM).find(([, v]) => v === tutor.rate)?.[0] || '$20/hr'
+  );
+  const [bio, setBio] = useState(tutor.bio || '');
+  const [handle, setHandle] = useState((tutor.contactEmail || '').split('@')[0]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    getModules().then((data) => setModules(Array.isArray(data) ? data : data.data || []));
+  }, []);
+
+  const toggleMod = (code) => {
+    setSelectedMods((prev) =>
+      prev.includes(code) ? prev.filter((m) => m !== code) : prev.length < 3 ? [...prev, code] : prev
+    );
+  };
+
+  const submit = async () => {
+    const cleanMods = sanitiseModuleCodes(selectedMods, 3);
+    if (!cleanMods.length) { toast.error('Select at least one module'); return; }
+    if (!/^[a-zA-Z0-9._-]+$/.test(handle)) { toast.error('Invalid email handle'); return; }
+    const cleanRate = ALLOWED_RATES.includes(rate) ? rate : '$20/hr';
+
+    setLoading(true);
+    try {
+      await putTutor(tutor.id, {
+        module_codes: cleanMods,
+        rate: RATE_TO_NUM[cleanRate] ?? 0,
+        bio: bio.trim(),
+        contact_email: handle + '@sit.singaporetech.edu.sg',
+      });
+      toast.success('Listing updated!');
+      onSaved();
+      onClose();
+    } catch (e) {
+      toast.error(e.response?.data?.message || 'Failed to update');
+    } finally { setLoading(false); }
+  };
+
+  return (
+    <Modal onClose={onClose} className="modal-md">
+      <div className="modal-head">
+        <h3>Edit Listing</h3>
+        <p style={{ color: 'var(--text-secondary)', fontSize: '0.88rem' }}>Update your tutor listing</p>
+      </div>
+      <div className="modal-body">
+        <div className="form-group">
+          <label>Modules (up to 3 — click to select)</label>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginTop: 5 }}>
+            {modules.map((m) => (
+              <button
+                key={m.code}
+                className={`pill${selectedMods.includes(m.code) ? ' active' : ''}`}
+                onClick={() => toggleMod(m.code)}
+                style={{ fontSize: '0.72rem' }}
+              >
+                {m.code}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="form-group">
+          <label htmlFor="edit-rate">Hourly Rate</label>
+          <select id="edit-rate" value={rate} onChange={(e) => setRate(e.target.value)}>
+            {ALLOWED_RATES.map((r) => <option key={r}>{r}</option>)}
+          </select>
+        </div>
+        <div className="form-group">
+          <label htmlFor="edit-bio">Short Bio</label>
+          <textarea id="edit-bio" value={bio} onChange={(e) => setBio(e.target.value)} rows={2} maxLength={500} />
+        </div>
+        <div className="form-group">
+          <label htmlFor="edit-email">Contact Email</label>
+          <div style={{ display: 'flex', alignItems: 'center' }}>
+            <input
+              id="edit-email"
+              type="text"
+              value={handle}
+              onChange={(e) => setHandle(e.target.value)}
+              style={{ borderRadius: 'var(--radius-sm) 0 0 var(--radius-sm)', borderRight: 'none' }}
+              maxLength={64}
+            />
+            <span style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', padding: '9px 10px', fontSize: '0.82rem', color: 'var(--text-muted)', borderRadius: '0 var(--radius-sm) var(--radius-sm) 0', whiteSpace: 'nowrap' }}>
+              @sit.singaporetech.edu.sg
+            </span>
+          </div>
+        </div>
+        <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', marginTop: 6 }} onClick={submit} disabled={loading}>
+          {loading ? 'Saving...' : 'Save Changes'}
+        </button>
       </div>
     </Modal>
   );
@@ -145,6 +243,7 @@ export default function Tutors() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [contactTutor, setContactTutor] = useState(null);
+  const [editTutor, setEditTutor] = useState(null);
   const [offerOpen, setOfferOpen] = useState(false);
 
   const load = () => {
@@ -164,6 +263,7 @@ export default function Tutors() {
   return (
     <div className="page-section">
       {contactTutor && <ContactModal tutor={contactTutor} onClose={() => setContactTutor(null)} />}
+      {editTutor && <EditTutorModal tutor={editTutor} onClose={() => setEditTutor(null)} onSaved={load} />}
       {offerOpen && <OfferTutorModal onClose={() => setOfferOpen(false)} onSaved={load} />}
       <div className="section-header">
         <h1>Tutor Finder</h1>
@@ -192,7 +292,10 @@ export default function Tutors() {
               <div className="tbio">{t.bio}</div>
               <span className="trate">S${t.rate}</span>
             </div>
-            <div style={{ alignSelf: 'center' }}>
+            <div style={{ alignSelf: 'center', display: 'flex', gap: 6 }}>
+              {user && t.userEmail === user.email && (
+                <button className="btn btn-secondary btn-sm" onClick={() => setEditTutor(t)}>Edit</button>
+              )}
               <button className="btn btn-secondary btn-sm" onClick={() => setContactTutor(t)}>View Info</button>
             </div>
           </div>

@@ -1,9 +1,60 @@
 import { useState, useEffect } from 'react';
-import { getStudyGroups, postStudyGroup, getModules } from '../api/index';
+import { getStudyGroups, postStudyGroup, putStudyGroup, getModules } from '../api/index';
 import { useAuth } from '../context/AuthContext';
 import { Loading, Empty } from '../components/Shared';
 import Modal from '../components/Modal';
 import toast from 'react-hot-toast';
+
+function EditGroupModal({ group, onClose, onSaved }) {
+  const [name, setName] = useState(group.name || '');
+  const [desc, setDesc] = useState(group.description || '');
+  const [meetingTime, setMeetingTime] = useState(group.meeting_time || '');
+  const [location, setLocation] = useState(group.location || '');
+  const [loading, setLoading] = useState(false);
+
+  const submit = async () => {
+    if (!name.trim()) { toast.error('Group name required'); return; }
+    setLoading(true);
+    try {
+      await putStudyGroup(group.id, { name, description: desc, meeting_time: meetingTime, location });
+      toast.success('Group updated!');
+      onSaved();
+      onClose();
+    } catch (e) {
+      toast.error(e.response?.data?.message || 'Failed to update');
+    } finally { setLoading(false); }
+  };
+
+  return (
+    <Modal onClose={onClose} className="modal-md">
+      <div className="modal-head">
+        <h3>Edit Study Group</h3>
+        <p style={{ color: 'var(--text-secondary)', fontSize: '0.88rem' }}>Update group details</p>
+      </div>
+      <div className="modal-body">
+        <div className="form-group">
+          <label>Group Name</label>
+          <input type="text" value={name} onChange={(e) => setName(e.target.value)} maxLength={150} />
+        </div>
+        <div className="form-group">
+          <label>Description</label>
+          <textarea value={desc} onChange={(e) => setDesc(e.target.value)} rows={2} maxLength={500} />
+        </div>
+        <div className="form-group">
+          <label>Meeting Time</label>
+          <input type="text" placeholder="e.g. Wednesdays 6pm" value={meetingTime} onChange={(e) => setMeetingTime(e.target.value)} maxLength={100} />
+        </div>
+        <div className="form-group">
+          <label>Location</label>
+          <input type="text" placeholder="e.g. Library Level 3" value={location} onChange={(e) => setLocation(e.target.value)} maxLength={150} />
+        </div>
+        <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', marginTop: 6 }} onClick={submit} disabled={loading}>
+          {loading ? 'Saving...' : 'Save Changes'}
+        </button>
+      </div>
+    </Modal>
+  );
+}
 
 function CreateGroupModal({ onClose, onSaved }) {
   const [modules, setModules] = useState([]);
@@ -82,6 +133,7 @@ export default function StudyGroups() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [createOpen, setCreateOpen] = useState(false);
+  const [editGroup, setEditGroup] = useState(null);
 
   const load = () => {
     setLoading(true);
@@ -100,6 +152,7 @@ export default function StudyGroups() {
   return (
     <div className="page-section">
       {createOpen && <CreateGroupModal onClose={() => setCreateOpen(false)} onSaved={load} />}
+      {editGroup && <EditGroupModal group={editGroup} onClose={() => setEditGroup(null)} onSaved={load} />}
 
       <div className="section-header">
         <h1>Study Groups</h1>
@@ -143,6 +196,9 @@ export default function StudyGroups() {
                 Created by {g.creator?.name || 'Unknown'} · {g.createdAt?.split('T')[0]}
               </span>
               <div className="help-actions">
+                {user && g.user_id === user.id && (
+                  <button className="btn btn-secondary btn-sm" onClick={() => setEditGroup(g)}>Edit</button>
+                )}
                 {g.memberCount < g.maxSize && (
                   <button className="btn btn-primary btn-sm">Join Group</button>
                 )}
