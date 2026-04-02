@@ -184,10 +184,10 @@ function ReviewCard({ review, moduleCode, onRefresh }) {
           <button className={`vote-btn${myVote === 'up' ? ' voted' : ''}`} onClick={() => handleVote('up')}>▲ {review.upvotes || 0}</button>
           <button className={`vote-btn${myVote === 'down' ? ' voted' : ''}`} onClick={() => handleVote('down')}>▼ {review.downvotes || 0}</button>
           <button className="btn-ghost btn-sm" onClick={() => setShowComments((s) => !s)}>
-            💬 {(review.comments || []).length}
+             {(review.comments || []).length}
           </button>
-          {isOwn && <button className="btn-ghost btn-sm" onClick={() => setEditOpen(true)}>✏️ Edit</button>}
-          {!isOwn && user && <button className="btn-ghost btn-sm" onClick={handleReport}>🚩</button>}
+          {isOwn && <button className="btn-ghost btn-sm" onClick={() => setEditOpen(true)}>️ Edit</button>}
+          {!isOwn && user && <button className="btn-ghost btn-sm" onClick={handleReport}></button>}
         </div>
         {showComments && (
           <div className="comments-area">
@@ -240,7 +240,7 @@ export default function ModuleDetail() {
   useEffect(() => { load(); }, [code]);
 
   if (loading) return <div className="page-section"><Loading /></div>;
-  if (!mod) return <div className="page-section"><Empty icon="📭" title="Module not found" /></div>;
+  if (!mod) return <div className="page-section"><Empty icon="" title="Module not found" /></div>;
 
   const reviews = mod.reviews || [];
   const avg = reviews.length ? (reviews.reduce((s, r) => s + r.rating, 0) / reviews.length).toFixed(1) : null;
@@ -293,7 +293,7 @@ export default function ModuleDetail() {
         </div>
         {reviews.length
           ? reviews.map((r) => <ReviewCard key={r.id} review={r} moduleCode={mod.code} onRefresh={load} />)
-          : <Empty icon="📝" title="No reviews yet" />}
+          : <Empty icon="" title="No reviews yet" />}
       </div>
     </div>
   );

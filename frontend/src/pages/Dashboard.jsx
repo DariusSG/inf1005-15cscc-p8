@@ -46,7 +46,7 @@ function ChangePasswordSection() {
                 style={{ cursor: 'pointer', userSelect: 'none' }}
                 onClick={() => { setOpen((o) => !o); reset(); }}
             >
-                🔑 Change Password
+                 Change Password
                 <span style={{ marginLeft: 'auto', fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 400 }}>
           {open ? '▲ collapse' : '▼ expand'}
         </span>

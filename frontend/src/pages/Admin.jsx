@@ -89,7 +89,7 @@ export default function Admin() {
 
       {/* Create Module */}
       <div className="admin-box">
-        <h3>📦 Create Module</h3>
+        <h3> Create Module</h3>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
           <div className="form-group">
             <label htmlFor="a-code">Code</label>

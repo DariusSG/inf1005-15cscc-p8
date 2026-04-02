@@ -112,7 +112,7 @@ export function ErrorBoundaryPage() {
             glowColor: 'rgba(234,178,68,0.12)',
             title: 'Sign in required',
             message: 'You need to be signed in to view this page.',
-            icon: '🔒',
+            icon: '',
         }
         : is403
             ? {
@@ -123,7 +123,7 @@ export function ErrorBoundaryPage() {
                 glowColor: 'rgba(224,90,90,0.12)',
                 title: 'Access denied',
                 message: "You don't have permission to view this page.",
-                icon: '🚫',
+                icon: '',
             }
             : is500
                 ? {
@@ -134,7 +134,7 @@ export function ErrorBoundaryPage() {
                     glowColor: 'rgba(224,90,90,0.12)',
                     title: 'Something went wrong',
                     message: 'The server ran into an unexpected error. Try again in a moment.',
-                    icon: '💥',
+                    icon: '',
                 }
                 : {
                     code: 'ERR',
@@ -144,7 +144,7 @@ export function ErrorBoundaryPage() {
                     glowColor: 'rgba(91,141,239,0.1)',
                     title: 'An error occurred',
                     message: error?.message || 'Something unexpected happened.',
-                    icon: '⚠️',
+                    icon: '',
                 };
 
     return (
@@ -248,7 +248,7 @@ export function ErrorBoundaryPage() {
 
             <div style={{ display: 'flex', gap: 10, position: 'relative', zIndex: 1 }}>
                 <button className="btn btn-primary" onClick={() => navigate('/')}>
-                    🏠 Go Home
+                     Go Home
                 </button>
                 <button className="btn btn-secondary" onClick={() => navigate(-1)}>
                     ← Go Back
