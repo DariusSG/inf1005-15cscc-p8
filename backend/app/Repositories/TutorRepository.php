@@ -126,11 +126,6 @@ class TutorRepository extends BaseRepository
         return $tutor->load(['user:id,email', 'modules:code,name']);
     }
 
-    public static function find(int $id): ?Tutor
-    {
-        return Tutor::with(['user:id,email', 'modules:code,name'])->find($id);
-    }
-
     public static function delete(int $id): bool
     {
         $tutor = Tutor::find($id);
