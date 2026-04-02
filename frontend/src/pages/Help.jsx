@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getHelpRequests, postHelpRequest, postHelpSolve, getModules } from '../api/index';
+import { getHelpRequests, postHelpRequest, putHelpRequest, postHelpSolve, getModules } from '../api/index';
 import { useAuth } from '../context/AuthContext';
 import { sanitiseField, sanitiseBounty, requireField } from '../utils/sanitise';
 import { Loading, Empty, UrgencyBadge, BountyTag, SolvedTag } from '../components/Shared';
@@ -24,6 +24,96 @@ function HelpDetailModal({ help, onClose }) {
         <div className="info-row" style={{ borderBottom: 'none' }}><span className="info-label">Description</span></div>
         <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', padding: '4px 0 16px' }}>{help.description || help.desc}</p>
         <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', textAlign: 'center' }}>Reach out via email if you can help.</p>
+      </div>
+    </Modal>
+  );
+}
+
+function EditHelpModal({ help, onClose, onSaved }) {
+  const [title, setTitle] = useState(help.title || '');
+  const [desc, setDesc] = useState(help.desc || '');
+  const [urgency, setUrgency] = useState(help.urgency || 'medium');
+  const [handle, setHandle] = useState((help.contactEmail || '').split('@')[0]);
+  const [bountyOn, setBountyOn] = useState(help.hasBounty || false);
+  const [bountyAmount, setBountyAmount] = useState(help.bountyAmount || 10);
+  const [loading, setLoading] = useState(false);
+
+  const submit = async () => {
+    if (!title.trim()) { toast.error('Title required'); return; }
+    if (!desc.trim()) { toast.error('Description required'); return; }
+    if (!/^[a-zA-Z0-9._-]+$/.test(handle)) { toast.error('Invalid email handle'); return; }
+    const cleanUrgency = ALLOWED_URGENCY.includes(urgency) ? urgency : 'medium';
+
+    setLoading(true);
+    try {
+      await putHelpRequest(help.id, {
+        title: title.trim(),
+        description: desc.trim(),
+        urgency: cleanUrgency,
+        contact_email: handle + '@sit.singaporetech.edu.sg',
+        has_bounty: bountyOn,
+        bounty_amount: bountyOn ? bountyAmount : 0,
+      });
+      toast.success('Request updated!');
+      onSaved();
+      onClose();
+    } catch (e) {
+      toast.error(e.response?.data?.message || 'Failed to update');
+    } finally { setLoading(false); }
+  };
+
+  return (
+    <Modal onClose={onClose} className="modal-md">
+      <div className="modal-head">
+        <h3>Edit Help Request</h3>
+        <p style={{ color: 'var(--text-secondary)', fontSize: '0.88rem' }}>Update your request details</p>
+      </div>
+      <div className="modal-body">
+        <div className="form-group">
+          <label htmlFor="edit-help-title">Title</label>
+          <input id="edit-help-title" type="text" value={title} onChange={(e) => setTitle(e.target.value)} maxLength={200} />
+        </div>
+        <div className="form-group">
+          <label htmlFor="edit-help-desc">Description</label>
+          <textarea id="edit-help-desc" value={desc} onChange={(e) => setDesc(e.target.value)} rows={3} maxLength={2000} />
+        </div>
+        <div className="form-group">
+          <label htmlFor="edit-help-urgency">Urgency</label>
+          <select id="edit-help-urgency" value={urgency} onChange={(e) => setUrgency(e.target.value)}>
+            <option value="low">Low — No rush</option>
+            <option value="medium">Medium — This week</option>
+            <option value="high">High — ASAP</option>
+          </select>
+        </div>
+        <div className="form-group">
+          <label htmlFor="edit-help-email">Contact Email</label>
+          <div style={{ display: 'flex', alignItems: 'center' }}>
+            <input id="edit-help-email" type="text" value={handle} onChange={(e) => setHandle(e.target.value)} style={{ borderRadius: 'var(--radius-sm) 0 0 var(--radius-sm)', borderRight: 'none' }} maxLength={64} />
+            <span style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', padding: '9px 10px', fontSize: '0.82rem', color: 'var(--text-muted)', borderRadius: '0 var(--radius-sm) var(--radius-sm) 0', whiteSpace: 'nowrap' }}>
+              @sit.singaporetech.edu.sg
+            </span>
+          </div>
+        </div>
+        <div className="form-group">
+          <label>Offer a Bounty?</label>
+          <div className="bounty-toggle">
+            <div className={`toggle${bountyOn ? ' on' : ''}`} onClick={() => setBountyOn((b) => !b)} role="switch" aria-checked={bountyOn}>
+              <div className="knob" />
+            </div>
+            <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{bountyOn ? 'Bounty enabled' : 'No bounty'}</span>
+          </div>
+          {bountyOn && (
+            <div style={{ marginTop: 10 }}>
+              <label htmlFor="edit-bounty-amount">Bounty Amount (SGD)</label>
+              <select id="edit-bounty-amount" value={bountyAmount} onChange={(e) => setBountyAmount(+e.target.value)}>
+                {[5, 10, 20, 30, 50].map((n) => <option key={n} value={n}>${n}</option>)}
+              </select>
+            </div>
+          )}
+        </div>
+        <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', marginTop: 6 }} onClick={submit} disabled={loading}>
+          {loading ? 'Saving...' : 'Save Changes'}
+        </button>
       </div>
     </Modal>
   );
@@ -150,6 +240,7 @@ export default function Help() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [detailItem, setDetailItem] = useState(null);
+  const [editItem, setEditItem] = useState(null);
   const [createOpen, setCreateOpen] = useState(false);
 
   const load = () => {
@@ -174,6 +265,7 @@ export default function Help() {
   return (
     <div className="page-section">
       {detailItem && <HelpDetailModal help={detailItem} onClose={() => setDetailItem(null)} />}
+      {editItem && <EditHelpModal help={editItem} onClose={() => setEditItem(null)} onSaved={load} />}
       {createOpen && <CreateHelpModal onClose={() => setCreateOpen(false)} onSaved={load} />}
       <div className="section-header">
         <h1>Help Finder</h1>
@@ -205,6 +297,7 @@ export default function Help() {
               <div className="help-footer">
                 <span className="help-meta">{(h.contactEmail || '').split('@')[0]}</span>
                 <div className="help-actions">
+                  {isOwn && !solved && <button className="btn btn-secondary btn-sm" onClick={() => setEditItem(h)}>Edit</button>}
                   {isOwn && !solved && <button className="btn btn-success btn-sm" onClick={() => handleSolve(h.id)}>✓ Solved</button>}
                   {!isOwn && <button className="btn btn-secondary btn-sm" onClick={() => setDetailItem(h)}>View Details</button>}
                 </div>

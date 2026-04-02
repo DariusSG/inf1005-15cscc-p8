@@ -101,6 +101,65 @@ class TutorController
             new OA\Response(response: 400, description: "Validation error", content: new OA\JsonContent(ref: "#/components/schemas/ErrorResponse"))
         ]
     )]
+    #[OA\Put(
+        path: "/tutors/{id}",
+        summary: "Update a tutor listing",
+        tags: ["Tutors"],
+        security: [["bearerAuth" => []]],
+        parameters: [
+            new OA\Parameter(name: "id", in: "path", required: true, schema: new OA\Schema(type: "integer"))
+        ],
+        requestBody: new OA\RequestBody(
+            content: new OA\JsonContent(
+                properties: [
+                    new OA\Property(property: "module_codes", type: "array", items: new OA\Items(type: "string")),
+                    new OA\Property(property: "contact_email", type: "string", format: "email"),
+                    new OA\Property(property: "bio", type: "string"),
+                    new OA\Property(property: "rate", type: "number", minimum: 0, maximum: 1000)
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(response: 200, description: "Updated", content: new OA\JsonContent(ref: "#/components/schemas/Tutor")),
+            new OA\Response(response: 400, description: "Validation error"),
+            new OA\Response(response: 403, description: "Forbidden"),
+            new OA\Response(response: 404, description: "Not found")
+        ]
+    )]
+    public function update(int $id): void
+    {
+        $userId = JwtMiddleware::userId();
+        $tutor  = TutorRepository::find($id);
+        if (!$tutor) {
+            Response::json(['error' => 'Not found'], 404);
+        }
+        if ($tutor->user_id !== $userId) {
+            Response::json(['error' => 'Forbidden'], 403);
+        }
+
+        $data = Request::body();
+        try {
+            $updates = [];
+            if (isset($data['bio']))           $updates['bio']           = Validators::stringCheck($data['bio'], 'Content', 1000);
+            if (isset($data['rate']))          $updates['rate']          = Validators::rangeCheck($data['rate'], 0, 1000, 'Rate');
+            if (isset($data['contact_email'])) $updates['contact_email'] = Validators::email($data['contact_email']);
+
+            $moduleCodes = null;
+            if (isset($data['module_codes'])) {
+                $moduleCodes = array_values(array_filter(
+                    array_map('strtoupper', (array) $data['module_codes']),
+                    fn($c) => preg_match('/^[A-Za-z0-9]{2,10}$/', $c)
+                ));
+            }
+
+            $updated = TutorRepository::update($id, $updates, $moduleCodes);
+            Response::json(TutorRepository::format($updated));
+        } catch (\InvalidArgumentException $e) {
+            Logger::channel()->error('Error at TutorController@update', ['exception' => $e]);
+            Response::json(['error' => 'Invalid tutor data'], 400);
+        }
+    }
+
     public function store()
     {
         $userId = JwtMiddleware::userId();

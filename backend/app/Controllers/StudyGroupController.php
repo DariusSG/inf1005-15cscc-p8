@@ -106,6 +106,58 @@ class StudyGroupController
             )
         ]
     )]
+    #[OA\Put(
+        path: "/study-groups/{id}",
+        summary: "Update a study group",
+        tags: ["Study Groups"],
+        security: [["bearerAuth" => []]],
+        parameters: [
+            new OA\Parameter(name: "id", in: "path", required: true, schema: new OA\Schema(type: "integer"))
+        ],
+        requestBody: new OA\RequestBody(
+            content: new OA\JsonContent(
+                properties: [
+                    new OA\Property(property: "name", type: "string"),
+                    new OA\Property(property: "description", type: "string", nullable: true),
+                    new OA\Property(property: "meeting_time", type: "string", nullable: true),
+                    new OA\Property(property: "location", type: "string", nullable: true)
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(response: 200, description: "Updated", content: new OA\JsonContent(ref: "#/components/schemas/StudyGroup")),
+            new OA\Response(response: 400, description: "Validation error"),
+            new OA\Response(response: 403, description: "Forbidden"),
+            new OA\Response(response: 404, description: "Not found")
+        ]
+    )]
+    public function update(int $id): void
+    {
+        $userId = JwtMiddleware::userId();
+        $group  = StudyGroupRepository::find($id);
+        if (!$group) {
+            Response::json(['error' => 'Not found'], 404);
+        }
+        if ($group->user_id !== $userId) {
+            Response::json(['error' => 'Forbidden'], 403);
+        }
+
+        $data = Request::body();
+        try {
+            $updates = [];
+            if (isset($data['name']))         $updates['name']         = Validators::stringCheck($data['name'], 'Title', 150);
+            if (isset($data['description']))  $updates['description']  = Validators::stringCheck($data['description'], 'Content', 500);
+            if (isset($data['location']))     $updates['location']     = Validators::stringCheck($data['location'], 'Content', 150);
+            if (isset($data['meeting_time'])) $updates['meeting_time'] = Validators::stringCheck($data['meeting_time'], 'Content', 100);
+
+            $updated = StudyGroupRepository::update($id, $updates);
+            Response::json(StudyGroupRepository::format($updated));
+        } catch (\InvalidArgumentException $e) {
+            Logger::channel()->error('Error at StudyGroupController@update', ['exception' => $e]);
+            Response::json(['error' => 'Invalid study group data'], 400);
+        }
+    }
+
     public function store()
     {
         $userId = JwtMiddleware::userId();

@@ -285,6 +285,121 @@ readonly class AdminController
             new OA\Response(response: 409, description: "Module already exists")
         ]
     )]
+    #[OA\Put(
+        path: "/admin/modules/{code}",
+        summary: "Update an existing module",
+        tags: ["Admin"],
+        security: [["bearerAuth" => []]],
+        parameters: [
+            new OA\Parameter(name: "code", in: "path", required: true, schema: new OA\Schema(type: "string"))
+        ],
+        requestBody: new OA\RequestBody(
+            content: new OA\JsonContent(ref: "#/components/schemas/Module")
+        ),
+        responses: [
+            new OA\Response(response: 200, description: "Module updated", content: new OA\JsonContent(ref: "#/components/schemas/Module")),
+            new OA\Response(response: 400, description: "Validation error"),
+            new OA\Response(response: 404, description: "Module not found"),
+            new OA\Response(response: 401, description: "Unauthorized")
+        ]
+    )]
+    public function module_update(string $code): void
+    {
+        $data = Request::body() ?? [];
+        $code = strtoupper($code);
+
+        if (!ModuleRepository::findByCode($code)) {
+            Response::json(['error' => 'Module not found'], 404);
+            return;
+        }
+
+        try {
+            $updates = [];
+            if (isset($data['name']))        $updates['name']        = Validators::stringCheck($data['name'], 'Title', 150);
+            if (isset($data['faculty']))     $updates['faculty']     = $data['faculty'];
+            if (array_key_exists('description', $data)) {
+                $updates['description'] = !empty(trim((string)$data['description']))
+                    ? Validators::stringCheck($data['description'], 'Content', 3000)
+                    : null;
+            }
+            if (isset($data['credits'])) {
+                $credits = filter_var($data['credits'], FILTER_VALIDATE_INT, [
+                    'options' => ['min_range' => 1, 'max_range' => 20]
+                ]);
+                if ($credits === false) throw new InvalidArgumentException('Credits must be between 1 and 20');
+                $updates['credits'] = $credits;
+            }
+
+            $semesters = null;
+            if (isset($data['semesters'])) {
+                $semesters = array_values(array_unique(array_filter(
+                    array_map(fn($s) => (int)$s, (array)$data['semesters']),
+                    fn($s) => $s >= 1 && $s <= 3
+                )));
+            }
+
+            $prereqs = null;
+            if (isset($data['prereqs'])) {
+                $prereqs = array_values(array_filter(array_unique(
+                    array_map(fn($p) => Validators::moduleCode(is_string($p) ? $p : null), (array)$data['prereqs'])
+                )));
+                if (in_array($code, $prereqs, true)) {
+                    throw new InvalidArgumentException('Module cannot list itself as a prerequisite');
+                }
+                if (!empty($prereqs)) {
+                    $existing = ModuleRepository::findManyByCodes($prereqs);
+                    $missing  = array_diff($prereqs, $existing->pluck('code')->toArray());
+                    if (!empty($missing)) {
+                        Response::json(['error' => 'Some prerequisite modules do not exist', 'missing_prereqs' => array_values($missing)], 400);
+                        return;
+                    }
+                }
+            }
+
+            $updated = ModuleRepository::update($code, $updates, $semesters, $prereqs);
+            AuditService::log(AuditService::EVENT_ADMIN_ACTION, ['action' => 'update_module', 'module_code' => $code]);
+            Response::json(ModuleRepository::format($updated));
+        } catch (InvalidArgumentException $e) {
+            Logger::channel()->error('Error at AdminController@module_update', ['exception' => $e]);
+            Response::json(['error' => 'Invalid module data'], 400);
+        } catch (Exception $e) {
+            Logger::channel()->error('Error at AdminController@module_update', ['exception' => $e]);
+            Response::json(['error' => 'An unexpected error occurred'], 500);
+        }
+    }
+
+    #[OA\Delete(
+        path: "/admin/modules/{code}",
+        summary: "Delete a module",
+        tags: ["Admin"],
+        security: [["bearerAuth" => []]],
+        parameters: [
+            new OA\Parameter(name: "code", in: "path", required: true, schema: new OA\Schema(type: "string"))
+        ],
+        responses: [
+            new OA\Response(response: 200, description: "Module deleted"),
+            new OA\Response(response: 404, description: "Module not found"),
+            new OA\Response(response: 401, description: "Unauthorized")
+        ]
+    )]
+    public function module_destroy(string $code): void
+    {
+        $code = strtoupper($code);
+        if (!ModuleRepository::findByCode($code)) {
+            Response::json(['error' => 'Module not found'], 404);
+            return;
+        }
+
+        try {
+            ModuleRepository::delete($code);
+            AuditService::log(AuditService::EVENT_ADMIN_ACTION, ['action' => 'delete_module', 'module_code' => $code]);
+            Response::json(['message' => 'Module deleted']);
+        } catch (Exception $e) {
+            Logger::channel()->error('Error at AdminController@module_destroy', ['exception' => $e]);
+            Response::json(['error' => 'An unexpected error occurred'], 500);
+        }
+    }
+
     public function module_store(): void
     {
         $data = Request::body() ?? [];

@@ -138,6 +138,67 @@ class HelpRequestController
             new OA\Response(response: 400, ref: "#/components/responses/ValidationError")
         ]
     )]
+    #[OA\Put(
+        path: "/help-requests/{id}",
+        summary: "Update a help request",
+        tags: ["Help Requests"],
+        security: [["bearerAuth" => []]],
+        parameters: [
+            new OA\Parameter(name: "id", in: "path", required: true, schema: new OA\Schema(type: "integer"))
+        ],
+        requestBody: new OA\RequestBody(
+            content: new OA\JsonContent(
+                properties: [
+                    new OA\Property(property: "title", type: "string"),
+                    new OA\Property(property: "description", type: "string"),
+                    new OA\Property(property: "urgency", type: "string", enum: ["low", "medium", "high"]),
+                    new OA\Property(property: "contact_email", type: "string", format: "email"),
+                    new OA\Property(property: "has_bounty", type: "boolean"),
+                    new OA\Property(property: "bounty_amount", type: "number", minimum: 0)
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(response: 200, description: "Updated", content: new OA\JsonContent(ref: "#/components/schemas/HelpRequest")),
+            new OA\Response(response: 400, description: "Validation error"),
+            new OA\Response(response: 403, description: "Forbidden"),
+            new OA\Response(response: 404, description: "Not found")
+        ]
+    )]
+    public function update(int $id): void
+    {
+        $userId = JwtMiddleware::userId();
+        $req    = HelpRequestRepository::find($id);
+        if (!$req) {
+            Response::json(['error' => 'Not found'], 404);
+        }
+        if ($req->user_id !== $userId) {
+            Response::json(['error' => 'Forbidden'], 403);
+        }
+
+        $data = Request::body();
+        try {
+            $updates = [];
+            if (isset($data['title']))        $updates['title']        = Validators::stringCheck($data['title'], 'Title', 200);
+            if (isset($data['description']))  $updates['description']  = Validators::stringCheck($data['description'], 'Content', 5000);
+            if (isset($data['contact_email'])) $updates['contact_email'] = Validators::email($data['contact_email']);
+            if (isset($data['urgency'])) {
+                if (!in_array($data['urgency'], ['low', 'medium', 'high'], true)) {
+                    throw new InvalidArgumentException('urgency must be low, medium, or high');
+                }
+                $updates['urgency'] = $data['urgency'];
+            }
+            if (isset($data['has_bounty']))   $updates['has_bounty']   = (bool)$data['has_bounty'];
+            if (isset($data['bounty_amount'])) $updates['bounty_amount'] = Validators::rangeCheck($data['bounty_amount'], 0, 10000, 'Bounty amount');
+
+            $updated = HelpRequestRepository::update($id, $updates);
+            Response::json(HelpRequestRepository::format($updated));
+        } catch (InvalidArgumentException $e) {
+            Logger::channel()->error('Error at HelpRequestController@update', ['exception' => $e]);
+            Response::json(['error' => 'Invalid request data'], 400);
+        }
+    }
+
     public function store()
     {
         $userId = JwtMiddleware::userId();

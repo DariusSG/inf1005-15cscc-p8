@@ -146,6 +146,16 @@ class HelpRequestRepository extends BaseRepository
 
 
     /**
+     * Update a HelpRequest
+     */
+    public static function update(int $id, array $data): HelpRequest
+    {
+        $req = HelpRequest::findOrFail($id);
+        $req->update($data);
+        return $req->fresh(['author:id,email', 'responses.author:id,email']);
+    }
+
+    /**
      * Create new HelpRequest
      *
      * @param array $data
