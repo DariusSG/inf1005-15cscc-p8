@@ -331,7 +331,8 @@ readonly class AdminController
             Response::json(ModuleRepository::format($module), 201);
 
         } catch (InvalidArgumentException $e) {
-            Response::json(['error' => $e->getMessage()], 400);
+            Logger::channel()->error('Error at AdminController@module_store', ['exception' => $e]);
+            Response::json(['error' => 'Invalid module data'], 400);
         } catch (Exception $e) {
             Logger::channel()->error('Error at AdminController@module_store', ['exception' => $e]);
             Response::json(['error' => 'An unexpected error occurred'], 500);

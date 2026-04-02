@@ -5,6 +5,7 @@ namespace App\Controllers;
 use App\Core\Request;
 use App\Core\Response;
 use App\Core\Validators;
+use App\Core\Logger;
 use App\Middleware\JwtMiddleware;
 use App\Repositories\StudyGroupRepository;
 use OpenApi\Attributes as OA;
@@ -106,9 +107,10 @@ class StudyGroupController
 
         try {
             $name        = Validators::stringCheck($data['name'] ?? '', 'Title', 150);
+            // Accept only snake_case 'module_code' from frontend
             $moduleCode  = Validators::moduleCode($data['module_code'] ?? null);
-            $description = isset($data['description'])  ? Validators::stringCheck($data['description'],'Content', 1000) : null;
-            $location    = isset($data['location'])      ? Validators::stringCheck($data['location'], 'Content', 200)  : null;
+            $description = isset($data['description'])  ? Validators::stringCheck($data['description'],'Content', 500) : null;
+            $location    = isset($data['location'])      ? Validators::stringCheck($data['location'], 'Content', 150)  : null;
             $meetingTime = isset($data['meeting_time'])  ? Validators::stringCheck($data['meeting_time'], 'Content', 100)  : null;
 
             $group = StudyGroupRepository::create([
@@ -122,7 +124,8 @@ class StudyGroupController
 
             Response::json($group->toArray(), 201);
         } catch (\InvalidArgumentException $e) {
-            Response::json(['error' => $e->getMessage()], 400);
+            Logger::channel()->error('Error at StudyGroupController@store', ['exception' => $e]);
+            Response::json(['error' => 'Invalid study group data'], 400);
         }
     }
 }
