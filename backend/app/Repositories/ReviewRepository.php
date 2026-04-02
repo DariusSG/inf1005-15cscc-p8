@@ -78,6 +78,7 @@ class ReviewRepository extends BaseRepository
         $userId     = $filters['user_id'] ?? 0;
         $moduleCode = $filters['module_code'] ?? null;
         $search     = $filters['search'] ?? null;
+        $authorId   = $filters['author_id'] ?? null;
 
         $query = Review::with([
             'author:id,email,name',
@@ -96,6 +97,10 @@ class ReviewRepository extends BaseRepository
                 $q->whereRaw('title LIKE ?', [$escaped])
                     ->orWhereRaw('content LIKE ?', [$escaped]);
             });
+        }
+
+        if ($authorId) {
+            $query->where('user_id', $authorId);
         }
 
         $paginator = $query->latest()->paginate($perPage, ['*'], 'page', $page);

@@ -23,9 +23,19 @@ class TutorRepository extends BaseRepository
 {
     public static function paginate(array $filters = [], int $perPage = 20, int $page = 1): array
     {
-        $search = $filters['search'] ?? null;
+        $moduleCode = $filters['module_code'] ?? null;
+        $search     = $filters['search'] ?? null;
+        $authorId   = $filters['author_id'] ?? null;
 
         $query = Tutor::with(['user:id,email', 'modules:code,name']);
+
+        if ($moduleCode) {
+            $query->whereHas('modules', fn($q) => $q->where('code', $moduleCode));
+        }
+
+        if ($authorId) {
+            $query->where('user_id', $authorId);
+        }
 
         if ($search) {
             $escaped = self::escapeSearch($search);
