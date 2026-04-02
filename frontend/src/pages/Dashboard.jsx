@@ -146,7 +146,7 @@ export default function Dashboard() {
     if (!user) {
         return (
             <div className="page-section">
-                <Empty icon="🔒" title="Sign in to view dashboard" />
+                <Empty icon="" title="Sign in to view dashboard" />
             </div>
         );
     }
@@ -164,7 +164,7 @@ export default function Dashboard() {
 
             {/* Reviews */}
             <div className="dash-section">
-                <h3>📝 My Reviews <span className="count">{myReviews.length}</span></h3>
+                <h3> My Reviews <span className="count">{myReviews.length}</span></h3>
                 {myReviews.length === 0 ? (
                     <p style={{ color: 'var(--text-muted)', fontSize: '0.86rem' }}>No reviews yet.</p>
                 ) : myReviews.map((r) => (
@@ -184,7 +184,7 @@ export default function Dashboard() {
 
             {/* Tutor listings */}
             <div className="dash-section">
-                <h3>🎓 My Tutor Listings <span className="count">{myTutors.length}/5</span></h3>
+                <h3>My Tutor Listings <span className="count">{myTutors.length}/5</span></h3>
                 {myTutors.length === 0 ? (
                     <p style={{ color: 'var(--text-muted)', fontSize: '0.86rem' }}>No tutor listings.</p>
                 ) : myTutors.map((t) => (
@@ -202,7 +202,7 @@ export default function Dashboard() {
 
             {/* Help requests */}
             <div className="dash-section">
-                <h3>🆘 My Help Requests <span className="count">{openHelp.length}/5 open</span></h3>
+                <h3> My Help Requests <span className="count">{openHelp.length}/5 open</span></h3>
                 {myHelp.length === 0 ? (
                     <p style={{ color: 'var(--text-muted)', fontSize: '0.86rem' }}>No help requests.</p>
                 ) : myHelp.map((h) => (

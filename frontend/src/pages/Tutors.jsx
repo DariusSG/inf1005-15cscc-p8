@@ -171,14 +171,14 @@ export default function Tutors() {
       </div>
       <div className="controls-row">
         <div className="search-input" style={{ flex: 1 }}>
-          <span className="si-icon">🔍</span>
+          <span className="si-icon"></span>
           <input type="text" placeholder="Search tutors by module or name..." value={search} onChange={(e) => setSearch(e.target.value)} maxLength={100} />
         </div>
         <button className="btn btn-primary btn-sm" onClick={() => { if (!user) { toast.error('Sign in first'); return; } setOfferOpen(true); }}>
           + Offer Tutoring
         </button>
       </div>
-      {loading ? <Loading /> : filtered.length === 0 ? <Empty icon="🔍" title="No tutors found" /> : (
+      {loading ? <Loading /> : filtered.length === 0 ? <Empty icon="" title="No tutors found" /> : (
         filtered.map((t) => (
           <div className="tutor-card" key={t.id}>
             <Avatar name={t.name || t.user?.name || '?'} variant="green" size="lg" />

@@ -34,7 +34,7 @@ export default function Topbar({ onSearch, onSignIn }) {
   return (
     <header className="topbar">
       <div className="topbar-search">
-        <span className="ts-icon">🔍</span>
+        <span className="ts-icon"></span>
         <input
           type="text"
           placeholder="Search modules, tutors..."
@@ -52,7 +52,7 @@ export default function Topbar({ onSearch, onSignIn }) {
           >
             <Avatar name={user.name} variant="accent" />
             <span>{user.name}</span>
-            <span className="chevron">▼</span>
+            <span className="chevron"></span>
           </div>
           {open && (
             <div className="user-dropdown visible">
@@ -62,16 +62,16 @@ export default function Topbar({ onSearch, onSignIn }) {
                 {isAdmin && <span className="ud-role">Admin</span>}
               </div>
               <button className="ud-item" onClick={() => go('/dashboard')}>
-                <span className="ud-icon">👤</span> Dashboard
+                <span className="ud-icon"></span> Dashboard
               </button>
               {isAdmin && (
                 <button className="ud-item" onClick={() => go('/admin')}>
-                  <span className="ud-icon">⚙️</span> Admin Panel
+                  <span className="ud-icon"></span> Admin Panel
                 </button>
               )}
               <div className="ud-divider" />
               <button className="ud-item danger" onClick={() => { setOpen(false); logout(); }}>
-                <span className="ud-icon">🚪</span> Sign Out
+                <span className="ud-icon"></span> Sign Out
               </button>
             </div>
           )}

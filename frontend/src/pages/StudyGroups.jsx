@@ -107,7 +107,7 @@ export default function StudyGroups() {
       </div>
       <div className="controls-row">
         <div className="search-input" style={{ flex: 1 }}>
-          <span className="si-icon">🔍</span>
+          <span className="si-icon"></span>
           <input
             type="text"
             placeholder="Search groups by module or name..."

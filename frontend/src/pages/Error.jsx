@@ -83,7 +83,7 @@ export function NotFound() {
 
             <div style={{ display: 'flex', gap: 10, position: 'relative', zIndex: 1 }}>
                 <button className="btn btn-primary" onClick={() => navigate('/')}>
-                    🏠 Go Home
+                     Go Home
                 </button>
                 <button className="btn btn-secondary" onClick={() => navigate(-1)}>
                     ← Go Back

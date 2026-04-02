@@ -58,7 +58,7 @@ export default function RegisterComplete() {
         return (
             <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-base)' }}>
                 <div style={{ textAlign: 'center', maxWidth: 380, padding: '0 24px' }}>
-                    <div style={{ fontSize: '2.5rem', marginBottom: 16 }}>❌</div>
+                    <div style={{ fontSize: '2.5rem', marginBottom: 16 }}></div>
                     <h2 style={{ marginBottom: 8, color: 'var(--text-primary)' }}>Invalid or expired link</h2>
                     <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: 24 }}>
                         This registration link is invalid or has expired. Please request a new one.

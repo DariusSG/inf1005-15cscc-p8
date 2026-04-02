@@ -42,7 +42,7 @@ export default function Modules() {
 
       <div className="controls-row">
         <div className="search-input">
-          <span className="si-icon">🔍</span>
+          <span className="si-icon"></span>
           <input
             type="text"
             placeholder="Search by code, name, or description..."
@@ -67,7 +67,7 @@ export default function Modules() {
       {loading ? (
         <Loading text="Loading modules..." />
       ) : filtered.length === 0 ? (
-        <Empty icon="📭" title="No modules found" />
+        <Empty icon="" title="No modules found" />
       ) : (
         <div className="mod-grid">
           {filtered.map((m, i) => {

@@ -2,11 +2,11 @@ import { NavLink, useNavigate } from 'react-router';
 import { useAuth } from '../context/AuthContext';
 
 const links = [
-  { to: '/', label: 'Home', icon: '🏠', end: true },
-  { to: '/modules', label: 'Modules', icon: '📘' },
-  { to: '/tutors', label: 'Tutor Finder', icon: '🎓' },
-  { to: '/study-groups', label: 'Study Groups', icon: '👥' },
-  { to: '/help', label: 'Help Finder', icon: '🆘' },
+  { to: '/', label: 'Home', icon: '', end: true },
+  { to: '/modules', label: 'Modules', icon: '' },
+  { to: '/tutors', label: 'Tutor Finder', icon: '' },
+  { to: '/study-groups', label: 'Study Groups', icon: '' },
+  { to: '/help', label: 'Help Finder', icon: '' },
 ];
 
 export default function Sidebar() {
@@ -38,7 +38,7 @@ export default function Sidebar() {
               to="/dashboard"
               className={({ isActive }) => `sidebar-link${isActive ? ' active' : ''}`}
             >
-              <span className="icon">👤</span>
+              <span className="icon"></span>
               <span className="lbl">Dashboard</span>
             </NavLink>
             {isAdmin && (
@@ -46,7 +46,7 @@ export default function Sidebar() {
                 to="/admin"
                 className={({ isActive }) => `sidebar-link${isActive ? ' active' : ''}`}
               >
-                <span className="icon">⚙️</span>
+                <span className="icon"></span>
                 <span className="lbl">Admin</span>
               </NavLink>
             )}

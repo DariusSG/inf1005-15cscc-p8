@@ -28,19 +28,19 @@ export default function Home() {
 
       <div className="home-cards">
         <div className="home-card c-mod" onClick={() => navigate('/modules')}>
-          <span className="hc-icon">📘</span>
+          <span className="hc-icon"></span>
           <div className="hc-title">Module Reviews</div>
           <div className="hc-desc">Browse and review modules across all faculties. See ratings, workload, and difficulty.</div>
           <div className="hc-stat"><span className="dot" /><span>{stats.modules}</span> modules</div>
         </div>
         <div className="home-card c-tut" onClick={() => navigate('/tutors')}>
-          <span className="hc-icon">🎓</span>
+          <span className="hc-icon"></span>
           <div className="hc-title">Tutor Finder</div>
           <div className="hc-desc">Find peer tutors or offer your own tutoring services to fellow students.</div>
           <div className="hc-stat"><span className="dot" /><span>{stats.tutors}</span> tutors</div>
         </div>
         <div className="home-card c-hlp" onClick={() => navigate('/help')}>
-          <span className="hc-icon">🆘</span>
+          <span className="hc-icon"></span>
           <div className="hc-title">Help Finder</div>
           <div className="hc-desc">Post help requests or lend a hand to students who need assistance.</div>
           <div className="hc-stat"><span className="dot" /><span>{stats.openHelp}</span> open requests</div>

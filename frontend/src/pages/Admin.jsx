@@ -78,7 +78,7 @@ export default function Admin() {
     } finally { setCreating(false); }
   };
 
-  if (!isAdmin) return <div className="page-section"><Empty icon="🔒" title="Admin access required" /></div>;
+  if (!isAdmin) return <div className="page-section"><Empty icon="" title="Admin access required" /></div>;
 
   return (
     <div className="page-section">
@@ -129,7 +129,7 @@ export default function Admin() {
 
       {/* Reported Reviews */}
       <div className="admin-box">
-        <h3>🚩 Reported Reviews</h3>
+        <h3> Reported Reviews</h3>
         {loading ? <Loading /> : (
           <table className="adm-table">
             <thead>
@@ -142,7 +142,7 @@ export default function Admin() {
                 <tr key={r.id}>
                   <td style={{ fontFamily: 'var(--mono)', fontSize: '0.8rem' }}>{r.module_code}</td>
                   <td>{r.title}</td>
-                  <td><span className="report-badge">🚩 {r.report_count}</span></td>
+                  <td><span className="report-badge"> {r.report_count}</span></td>
                   <td>
                     <button className="btn btn-secondary btn-sm" onClick={() => handleDismissReports(r.id, r.users || [])}>Dismiss</button>
                   </td>

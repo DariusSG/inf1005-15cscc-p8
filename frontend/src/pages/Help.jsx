@@ -181,14 +181,14 @@ export default function Help() {
       </div>
       <div className="controls-row">
         <div className="search-input" style={{ flex: 1 }}>
-          <span className="si-icon">🔍</span>
+          <span className="si-icon"></span>
           <input type="text" placeholder="Search help requests..." value={search} onChange={(e) => setSearch(e.target.value)} maxLength={100} />
         </div>
         <button className="btn btn-primary btn-sm" onClick={() => { if (!user) { toast.error('Sign in first'); return; } setCreateOpen(true); }}>
           + Request Help
         </button>
       </div>
-      {loading ? <Loading /> : filtered.length === 0 ? <Empty icon="🆘" title="No help requests found" /> : (
+      {loading ? <Loading /> : filtered.length === 0 ? <Empty icon="" title="No help requests found" /> : (
         filtered.map((h) => {
           const isOwn = user && user.id === h.userId;
           const solved = h.status === 'solved';

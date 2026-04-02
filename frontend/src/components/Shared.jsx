@@ -7,7 +7,7 @@ export function Loading({ text = 'Loading...' }) {
   );
 }
 
-export function Empty({ icon = '📭', title = 'Nothing here', sub = '' }) {
+export function Empty({ icon = '', title = 'Nothing here', sub = '' }) {
   return (
     <div className="empty">
       <div className="e-icon">{icon}</div>
@@ -43,7 +43,7 @@ export function UrgencyBadge({ urgency }) {
 }
 
 export function BountyTag({ amount }) {
-  return <span className="bounty-tag">💰 ${amount}</span>;
+  return <span className="bounty-tag"> ${amount}</span>;
 }
 
 export function SolvedTag() {

@@ -28,7 +28,7 @@ function ForgotPasswordView({ onBack }) {
     if (sent) {
         return (
             <div style={{ textAlign: 'center', padding: '32px 22px' }}>
-                <div style={{ fontSize: '2.2rem', marginBottom: 12 }}>📬</div>
+                <div style={{ fontSize: '2.2rem', marginBottom: 12 }}></div>
                 <h3 style={{ marginBottom: 8 }}>Check your email</h3>
                 <p style={{ color: 'var(--text-secondary)', fontSize: '0.88rem', lineHeight: 1.6, marginBottom: 20 }}>
                     If <strong>{email}</strong> is registered, a password reset link has been sent. Check your inbox.
@@ -198,7 +198,7 @@ export default function AuthModal({ onClose }) {
                 </div>
             ) : inviteSent ? (
                 <div style={{ textAlign: 'center', padding: '32px 22px' }}>
-                    <div style={{ fontSize: '2.2rem', marginBottom: 12 }}>📬</div>
+                    <div style={{ fontSize: '2.2rem', marginBottom: 12 }}></div>
                     <h3 style={{ marginBottom: 8 }}>Check your email</h3>
                     <p style={{ color: 'var(--text-secondary)', fontSize: '0.88rem', lineHeight: 1.6, marginBottom: 20 }}>
                         A registration link has been sent to <strong>{regEmail}</strong>. Click the link to set up your account.
