@@ -25,7 +25,7 @@ function CreateGroupModal({ onClose, onSaved }) {
     if (!name.trim()) { toast.error('Group name required'); return; }
     setLoading(true);
     try {
-      await postStudyGroup({ name, moduleCode, description: desc, maxSize });
+      await postStudyGroup({ name, module_code: moduleCode, description: desc, maxSize });
       toast.success('Study group created!');
       onSaved();
       onClose();
@@ -94,7 +94,7 @@ export default function StudyGroups() {
 
   const filtered = groups.filter((g) => {
     const q = search.toLowerCase();
-    return !q || g.name?.toLowerCase().includes(q) || (g.moduleCode || '').toLowerCase().includes(q);
+    return !q || g.name?.toLowerCase().includes(q) || (g.module_code || '').toLowerCase().includes(q);
   });
 
   return (
@@ -131,7 +131,7 @@ export default function StudyGroups() {
             <div className="help-head">
               <div>
                 <div className="help-title">{g.name}</div>
-                <div className="help-mod">{g.moduleCode}</div>
+                <div className="help-mod">{g.module_code}</div>
               </div>
               <span style={{ fontFamily: 'var(--mono)', fontSize: '0.76rem', color: 'var(--text-muted)' }}>
                 {g.memberCount || 1}/{g.maxSize} members
