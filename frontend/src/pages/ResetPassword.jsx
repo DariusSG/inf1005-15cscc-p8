@@ -148,7 +148,7 @@ export default function ResetPassword() {
                                 <input
                                     id="rp-new"
                                     type="password"
-                                    placeholder="Min 6 characters"
+                                    placeholder="Min 8 characters"
                                     value={newPw}
                                     onChange={(e) => setNewPw(e.target.value)}
                                     onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}

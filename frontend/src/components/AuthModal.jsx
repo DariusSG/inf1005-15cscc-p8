@@ -152,8 +152,8 @@ export default function AuthModal({ onClose }) {
             {tab === 'login' ? (
                 <div style={{ padding: '20px 22px' }}>
                     <div className="demo-box">
-                        <strong>Demo:</strong> demo@sit.singaporetech.edu.sg / demo123<br />
-                        <strong>Admin:</strong> admin@sit.singaporetech.edu.sg / admin123
+                        <strong>Demo:</strong> demo@sit.singaporetech.edu.sg / demo1234<br />
+                        <strong>Admin:</strong> admin@sit.singaporetech.edu.sg / admin1234
                     </div>
                     <div className="form-group">
                         <label htmlFor="login-email">SIT Email</label>
