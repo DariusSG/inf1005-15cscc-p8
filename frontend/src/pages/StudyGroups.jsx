@@ -78,7 +78,7 @@ function CreateGroupModal({ onClose, onSaved }) {
     if (!name.trim()) { toast.error('Group name required'); return; }
     setLoading(true);
     try {
-      await postStudyGroup({ name, module_code: moduleCode, description: desc, meeting_time: meetingTime, location });
+      await postStudyGroup({ name, module_code: moduleCode, description: desc, meeting_time: meetingTime, location, maxSize });
       toast.success('Study group created!');
       onSaved();
       onClose();
@@ -234,9 +234,7 @@ export default function StudyGroups() {
                     <button
                       className="btn btn-primary btn-sm"
                       onClick={() => handleJoin(g)}
-                    >
-                      {g.memberCount >= g.maxSize ? 'Full' : 'Join Group'}
-                    </button>
+                    >Join Group</button>
                   )
                 )}
               </div>

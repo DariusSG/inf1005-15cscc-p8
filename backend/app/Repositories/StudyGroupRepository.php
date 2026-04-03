@@ -114,7 +114,7 @@ class StudyGroupRepository extends BaseRepository
 
     public static function find(int $id): ?StudyGroup
     {
-        return StudyGroup::with(['creator:id,name,email', 'module:code,name'])
+        return StudyGroup::with(['creator:id,name,email', 'module:code,name', 'members:id'])
             ->withCount('members')
             ->find($id);
     }
@@ -163,7 +163,12 @@ class StudyGroupRepository extends BaseRepository
 
     public static function format(StudyGroup $group, ?int $currentUserId = null): array
     {
-        $memberIds = $group->members->pluck('id')->all();
+        $memberIds = $group->members
+            ->pluck('id')
+            ->map(fn($id) => (int) $id)
+            ->all();
+
+        $normalizedCurrentUserId = $currentUserId !== null ? (int) $currentUserId : null;
 
         return [
             'id' => $group->id,
@@ -176,7 +181,7 @@ class StudyGroupRepository extends BaseRepository
             'meeting_time' => $group->meeting_time,
             'location' => $group->location,
             'member_count' => (int) ($group->members_count ?? 0),
-            'is_member' => $currentUserId !== null && in_array($currentUserId, $memberIds, true),
+            'is_member' => $normalizedCurrentUserId !== null && in_array($normalizedCurrentUserId, $memberIds, true),
             'created_at' => $group->created_at,
         ];
     }
