@@ -16,7 +16,7 @@ export default function Sidebar() {
     <aside className="sidebar">
       <NavLink to="/" className="sidebar-brand" aria-label="SITMods home">
         <span>SIT
-            <em>Mods</em>
+            <em>izens</em>
         </span>
       </NavLink>
       <nav className="sidebar-nav">
