@@ -29,7 +29,7 @@ function HelpDetailModal({ help, onClose }) {
   );
 }
 
-function EditHelpModal({ help, onClose, onSaved }) {
+export function EditHelpModal({ help, onClose, onSaved }) {
   const [title, setTitle] = useState(help.title || '');
   const [desc, setDesc] = useState(help.desc || '');
   const [urgency, setUrgency] = useState(help.urgency || 'medium');
@@ -97,7 +97,7 @@ function EditHelpModal({ help, onClose, onSaved }) {
         <div className="form-group">
           <label>Offer a Bounty?</label>
           <div className="bounty-toggle">
-            <div className={`toggle${bountyOn ? ' on' : ''}`} onClick={() => setBountyOn((b) => !b)} role="switch" aria-checked={bountyOn}>
+            <div className={`toggle${bountyOn ? ' on' : ''}`} onClick={() => setBountyOn((b) => !b)} role="switch" aria-checked={bountyOn} tabIndex={0} aria-label="Offer a bounty" onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setBountyOn((b) => !b); } }}>
               <div className="knob" />
             </div>
             <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{bountyOn ? 'Bounty enabled' : 'No bounty'}</span>
@@ -212,7 +212,7 @@ function CreateHelpModal({ onClose, onSaved }) {
           <label>Offer a Bounty?</label>
           <div className="form-hint" style={{ marginTop: 0, marginBottom: 6 }}>Willing to offer a small reward?</div>
           <div className="bounty-toggle">
-            <div className={`toggle${bountyOn ? ' on' : ''}`} onClick={() => setBountyOn((b) => !b)} role="switch" aria-checked={bountyOn}>
+            <div className={`toggle${bountyOn ? ' on' : ''}`} onClick={() => setBountyOn((b) => !b)} role="switch" aria-checked={bountyOn} tabIndex={0} aria-label="Offer a bounty" onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setBountyOn((b) => !b); } }}>
               <div className="knob" />
             </div>
             <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{bountyOn ? 'Bounty enabled' : 'No bounty'}</span>
@@ -273,7 +273,7 @@ export default function Help() {
       </div>
       <div className="controls-row">
         <div className="search-input" style={{ flex: 1 }}>
-          <span className="si-icon"></span>
+          <span className="si-icon" aria-hidden="true"></span>
           <input type="text" placeholder="Search help requests..." value={search} onChange={(e) => setSearch(e.target.value)} maxLength={100} />
         </div>
         <button className="btn btn-primary btn-sm" onClick={() => { if (!user) { toast.error('Sign in first'); return; } setCreateOpen(true); }}>
@@ -282,7 +282,7 @@ export default function Help() {
       </div>
       {loading ? <Loading /> : filtered.length === 0 ? <Empty icon="" title="No help requests found" /> : (
         filtered.map((h) => {
-          const isOwn = user && user.id === h.userId;
+          const isOwn = user && user.email === h.userEmail;
           const solved = h.status === 'solved';
           return (
             <div className={`help-card${solved ? ' solved' : ''}`} key={h.id}>

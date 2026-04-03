@@ -34,7 +34,7 @@ export default function Topbar({ onSearch, onSignIn }) {
   return (
     <header className="topbar">
       <div className="topbar-search">
-        <span className="ts-icon"></span>
+        <span className="ts-icon" aria-hidden="true"></span>
         <input
           type="text"
           placeholder="Search modules, tutors..."
@@ -46,32 +46,35 @@ export default function Topbar({ onSearch, onSignIn }) {
 
       {user ? (
         <div className="user-menu-wrap" ref={wrapRef}>
-          <div
+          <button
             className={`user-menu-trigger${open ? ' open' : ''}`}
             onClick={() => setOpen((o) => !o)}
+            aria-expanded={open}
+            aria-haspopup="true"
+            aria-label={`User menu for ${user.name}`}
           >
             <Avatar name={user.name} variant="accent" />
             <span>{user.name}</span>
-            <span className="chevron"></span>
-          </div>
+            <span className="chevron" aria-hidden="true"></span>
+          </button>
           {open && (
-            <div className="user-dropdown visible">
+            <div className="user-dropdown visible" role="menu">
               <div className="ud-header">
                 <div className="ud-name">{user.name}</div>
                 <div className="ud-email">{user.email}</div>
                 {isAdmin && <span className="ud-role">Admin</span>}
               </div>
-              <button className="ud-item" onClick={() => go('/dashboard')}>
-                <span className="ud-icon"></span> Dashboard
+              <button className="ud-item" onClick={() => go('/dashboard')} role="menuitem">
+                <span className="ud-icon" aria-hidden="true"></span> Dashboard
               </button>
               {isAdmin && (
-                <button className="ud-item" onClick={() => go('/admin')}>
-                  <span className="ud-icon"></span> Admin Panel
+                <button className="ud-item" onClick={() => go('/admin')} role="menuitem">
+                  <span className="ud-icon" aria-hidden="true"></span> Admin Panel
                 </button>
               )}
               <div className="ud-divider" />
-              <button className="ud-item danger" onClick={() => { setOpen(false); logout(); }}>
-                <span className="ud-icon"></span> Sign Out
+              <button className="ud-item danger" onClick={() => { setOpen(false); logout(); }} role="menuitem">
+                <span className="ud-icon" aria-hidden="true"></span> Sign Out
               </button>
             </div>
           )}

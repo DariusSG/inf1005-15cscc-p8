@@ -1,25 +1,24 @@
-import { NavLink, useNavigate } from 'react-router';
+import { NavLink } from 'react-router';
 import { useAuth } from '../context/AuthContext';
 
 const links = [
-  { to: '/', label: 'Home', icon: '', end: true },
-  { to: '/modules', label: 'Modules', icon: '' },
-  { to: '/tutors', label: 'Tutor Finder', icon: '' },
-  { to: '/study-groups', label: 'Study Groups', icon: '' },
-  { to: '/help', label: 'Help Finder', icon: '' },
+  { to: '/', label: 'Home', icon: '🏠', end: true },
+  { to: '/modules', label: 'Modules', icon: '📚' },
+  { to: '/tutors', label: 'Tutor Finder', icon: '🎓' },
+  { to: '/study-groups', label: 'Study Groups', icon: '👥' },
+  { to: '/help', label: 'Help Finder', icon: '🙋' },
 ];
 
 export default function Sidebar() {
   const { user, isAdmin } = useAuth();
-  const navigate = useNavigate();
 
   return (
     <aside className="sidebar">
-      <div className="sidebar-brand" onClick={() => navigate('/')}>
+      <NavLink to="/" className="sidebar-brand" aria-label="SITMods home">
         <span>SIT
             <em>Mods</em>
         </span>
-      </div>
+      </NavLink>
       <nav className="sidebar-nav">
         {links.map(({ to, label, icon, end }) => (
           <NavLink
@@ -39,7 +38,7 @@ export default function Sidebar() {
               to="/dashboard"
               className={({ isActive }) => `sidebar-link${isActive ? ' active' : ''}`}
             >
-              <span className="icon"></span>
+              <span className="icon">📊</span>
               <span className="lbl">Dashboard</span>
             </NavLink>
             {isAdmin && (
@@ -47,7 +46,7 @@ export default function Sidebar() {
                 to="/admin"
                 className={({ isActive }) => `sidebar-link${isActive ? ' active' : ''}`}
               >
-                <span className="icon"></span>
+                <span className="icon">⚙️</span>
                 <span className="lbl">Admin</span>
               </NavLink>
             )}

@@ -5,6 +5,7 @@ import { postChangePassword } from '../api/auth';
 import { useAuth } from '../context/AuthContext';
 import { validatePassword } from '../utils/sanitise';
 import { Loading, Empty, SolvedTag } from '../components/Shared';
+import { EditHelpModal } from './Help';
 import toast from 'react-hot-toast';
 
 function ChangePasswordSection() {
@@ -12,17 +13,10 @@ function ChangePasswordSection() {
     const [newPw, setNewPw] = useState('');
     const [confirmPw, setConfirmPw] = useState('');
     const [loading, setLoading] = useState(false);
-    const [open, setOpen] = useState(false);
     const [error, setError] = useState('');
-    const [success, setSuccess] = useState(false);
-
-    const reset = () => {
-        setCurrentPw(''); setNewPw(''); setConfirmPw('');
-        setError(''); setSuccess(false);
-    };
 
     const handleSubmit = async () => {
-        setError(''); setSuccess(false);
+        setError('');
         if (!currentPw) { setError('Enter your current password.'); return; }
         const pwErr = validatePassword(newPw);
         if (pwErr) { setError(pwErr); return; }
@@ -31,10 +25,8 @@ function ChangePasswordSection() {
         setLoading(true);
         try {
             await postChangePassword(currentPw, newPw);
-            setSuccess(true);
-            reset();
+            setCurrentPw(''); setNewPw(''); setConfirmPw('');
             toast.success('Password changed!');
-            setOpen(false);
         } catch (e) {
             setError(e.response?.data?.message || 'Failed to change password. Check your current password.');
         } finally { setLoading(false); }
@@ -42,74 +34,55 @@ function ChangePasswordSection() {
 
     return (
         <div className="dash-section">
-            <h2
-                style={{ cursor: 'pointer', userSelect: 'none' }}
-                onClick={() => { setOpen((o) => !o); reset(); }}
-            >
-                 Change Password
-                <span style={{ marginLeft: 'auto', fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 400 }}>
-          {open ? '▲ collapse' : '▼ expand'}
-        </span>
-            </h2>
-
-            {open && (
-                <div style={{ maxWidth: 400 }}>
-                    <div className="form-group">
-                        <label htmlFor="cp-current">Current Password</label>
-                        <input
-                            id="cp-current"
-                            type="password"
-                            placeholder="Your current password"
-                            value={currentPw}
-                            onChange={(e) => setCurrentPw(e.target.value)}
-                            autoComplete="current-password"
-                            maxLength={128}
-                        />
-                    </div>
-                    <div className="form-group">
-                        <label htmlFor="cp-new">New Password</label>
-                        <input
-                            id="cp-new"
-                            type="password"
-                            placeholder="Min 6 characters"
-                            value={newPw}
-                            onChange={(e) => setNewPw(e.target.value)}
-                            autoComplete="new-password"
-                            maxLength={128}
-                        />
-                    </div>
-                    <div className="form-group">
-                        <label htmlFor="cp-confirm">Confirm New Password</label>
-                        <input
-                            id="cp-confirm"
-                            type="password"
-                            placeholder="Confirm new password"
-                            value={confirmPw}
-                            onChange={(e) => setConfirmPw(e.target.value)}
-                            autoComplete="new-password"
-                            maxLength={128}
-                        />
-                    </div>
-                    {error && (
-                        <div className="form-error" style={{ marginBottom: 10 }}>{error}</div>
-                    )}
-                    <div style={{ display: 'flex', gap: 8 }}>
-                        <button
-                            className="btn btn-primary btn-sm"
-                            onClick={handleSubmit}
-                            disabled={loading}
-                        >
-                            {loading ? 'Saving...' : 'Update Password'}
-                        </button>
-                        <button
-                            className="btn btn-ghost btn-sm"
-                            onClick={() => { setOpen(false); reset(); }}
-                        >
-                            Cancel
-                        </button>
-                    </div>
+            <h2> Change Password</h2>
+            <div style={{ maxWidth: 400 }}>
+                <div className="form-group">
+                    <label htmlFor="cp-current">Current Password</label>
+                    <input
+                        id="cp-current"
+                        type="password"
+                        placeholder="Your current password"
+                        value={currentPw}
+                        onChange={(e) => setCurrentPw(e.target.value)}
+                        autoComplete="current-password"
+                        maxLength={128}
+                    />
                 </div>
-            )}
+                <div className="form-group">
+                    <label htmlFor="cp-new">New Password</label>
+                    <input
+                        id="cp-new"
+                        type="password"
+                        placeholder="Min 6 characters"
+                        value={newPw}
+                        onChange={(e) => setNewPw(e.target.value)}
+                        autoComplete="new-password"
+                        maxLength={128}
+                    />
+                </div>
+                <div className="form-group">
+                    <label htmlFor="cp-confirm">Confirm New Password</label>
+                    <input
+                        id="cp-confirm"
+                        type="password"
+                        placeholder="Confirm new password"
+                        value={confirmPw}
+                        onChange={(e) => setConfirmPw(e.target.value)}
+                        autoComplete="new-password"
+                        maxLength={128}
+                    />
+                </div>
+                {error && (
+                    <div className="form-error" style={{ marginBottom: 10 }}>{error}</div>
+                )}
+                <button
+                    className="btn btn-primary btn-sm"
+                    onClick={handleSubmit}
+                    disabled={loading}
+                >
+                    {loading ? 'Saving...' : 'Update Password'}
+                </button>
+            </div>
         </div>
     );
 }
@@ -121,6 +94,7 @@ export default function Dashboard() {
     const [myTutors, setMyTutors] = useState([]);
     const [myHelp, setMyHelp] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [editHelp, setEditHelp] = useState(null);
 
     const load = () => {
         if (!user) return;
@@ -153,10 +127,9 @@ export default function Dashboard() {
 
     if (loading) return <div className="page-section"><Loading /></div>;
 
-    const openHelp = myHelp.filter((h) => h.status === 'open');
-
     return (
         <div className="page-section">
+            {editHelp && <EditHelpModal help={editHelp} onClose={() => setEditHelp(null)} onSaved={load} />}
             <div className="section-header">
                 <h1>My Dashboard</h1>
                 <p className="sub">Manage your reviews, tutoring offerings, and help requests</p>
@@ -184,7 +157,7 @@ export default function Dashboard() {
 
             {/* Tutor listings */}
             <div className="dash-section">
-                <h2>My Tutor Listings <span className="count">{myTutors.length}/5</span></h2>
+                <h2>My Tutor Listings <span className="count">{myTutors.length}</span></h2>
                 {myTutors.length === 0 ? (
                     <p style={{ color: 'var(--text-muted)', fontSize: '0.86rem' }}>No tutor listings.</p>
                 ) : myTutors.map((t) => (
@@ -202,7 +175,7 @@ export default function Dashboard() {
 
             {/* Help requests */}
             <div className="dash-section">
-                <h2> My Help Requests <span className="count">{openHelp.length}/5 open</span></h2>
+                <h2> My Help Requests <span className="count">{myHelp.length}</span></h2>
                 {myHelp.length === 0 ? (
                     <p style={{ color: 'var(--text-muted)', fontSize: '0.86rem' }}>No help requests.</p>
                 ) : myHelp.map((h) => (
@@ -218,9 +191,10 @@ export default function Dashboard() {
                         </div>
                         <div className="di-actions">
                             {h.status === 'open' && (
-                                <button className="btn btn-success btn-sm" onClick={() => handleSolve(h.id)}>
-                                    ✓ Solve
-                                </button>
+                                <>
+                                    <button className="btn btn-secondary btn-sm" onClick={() => setEditHelp(h)}>Edit</button>
+                                    <button className="btn btn-success btn-sm" onClick={() => handleSolve(h.id)}>✓ Solve</button>
+                                </>
                             )}
                         </div>
                     </div>

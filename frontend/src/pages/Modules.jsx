@@ -37,7 +37,7 @@ export default function Modules() {
 
       <div className="controls-row">
         <div className="search-input">
-          <span className="si-icon"></span>
+          <span className="si-icon" aria-hidden="true"></span>
           <input
             type="text"
             placeholder="Search by code, name, or description..."
@@ -74,6 +74,10 @@ export default function Modules() {
                 className="mod-card"
                 style={{ animation: `fadeUp .35s ${i * 0.04}s both` }}
                 onClick={() => navigate(`/modules/${m.code}`)}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate(`/modules/${m.code}`); } }}
+                aria-label={`${m.name} (${m.code})`}
               >
                 <FacTag faculty={m.faculty} />
                 <div className="code">{m.code}</div>

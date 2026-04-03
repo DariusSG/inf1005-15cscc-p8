@@ -71,7 +71,9 @@ function WriteReviewModal({ module, review, onClose, onSaved }) {
                 onMouseEnter={() => setHovered(v)}
                 onMouseLeave={() => setHovered(0)}
                 role="button"
+                tabIndex={0}
                 aria-label={`${v} star`}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setRating(v); } }}
               >★</span>
             ))}
           </div>
@@ -210,13 +212,13 @@ function ReviewCard({ review, moduleCode, onRefresh }) {
           <span className="rev-metric">Usefulness: <span>{review.usefulness}/10</span></span>
         </div>
         <div className="rev-actions">
-          <button className={`vote-btn${myVote === 'up' ? ' voted' : ''}`} onClick={() => handleVote('up')}>▲ {review.upvotes || 0}</button>
-          <button className={`vote-btn${myVote === 'down' ? ' voted' : ''}`} onClick={() => handleVote('down')}>▼ {review.downvotes || 0}</button>
-          <button className="btn-ghost btn-sm" onClick={() => setShowComments((s) => !s)}>
-             💬  {(review.comments || []).length}
+          <button className={`vote-btn${myVote === 'up' ? ' voted' : ''}`} onClick={() => handleVote('up')} aria-label={`Upvote (${review.upvotes || 0})`}><span aria-hidden="true">▲</span> {review.upvotes || 0}</button>
+          <button className={`vote-btn${myVote === 'down' ? ' voted' : ''}`} onClick={() => handleVote('down')} aria-label={`Downvote (${review.downvotes || 0})`}><span aria-hidden="true">▼</span> {review.downvotes || 0}</button>
+          <button className="btn-ghost btn-sm" onClick={() => setShowComments((s) => !s)} aria-label={`${showComments ? 'Hide' : 'Show'} comments (${(review.comments || []).length})`}>
+            <span aria-hidden="true">💬</span> {(review.comments || []).length}
           </button>
-          {isOwn && <button className="btn-ghost btn-sm" onClick={() => setEditOpen(true)}>✍️ Edit</button>}
-          <button className="btn-ghost btn-sm" onClick={handleReport}> 🚩 Report</button>
+          {isOwn && <button className="btn-ghost btn-sm" onClick={() => setEditOpen(true)}><span aria-hidden="true">✍️</span> Edit</button>}
+          <button className="btn-ghost btn-sm" onClick={handleReport}><span aria-hidden="true">🚩</span> Report</button>
         </div>
         {showComments && (
           <div className="comments-area">

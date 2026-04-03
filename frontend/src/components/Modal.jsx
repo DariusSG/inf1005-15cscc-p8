@@ -16,8 +16,8 @@ export default function Modal({ onClose, className = '', children }) {
       className="modal-overlay"
       onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div className={`modal ${className}`}>
-        <button className="modal-close" onClick={onClose}>✕</button>
+      <div className={`modal ${className}`} role="dialog" aria-modal="true">
+        <button className="modal-close" onClick={onClose} aria-label="Close">✕</button>
         {children}
       </div>
     </div>

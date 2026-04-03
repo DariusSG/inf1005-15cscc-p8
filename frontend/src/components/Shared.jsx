@@ -1,7 +1,7 @@
 export function Loading({ text = 'Loading...' }) {
   return (
-    <div className="loading">
-      <div className="spin" />
+    <div className="loading" role="status" aria-live="polite">
+      <div className="spin" aria-hidden="true" />
       <div>{text}</div>
     </div>
   );
@@ -10,7 +10,7 @@ export function Loading({ text = 'Loading...' }) {
 export function Empty({ icon = '', title = 'Nothing here', sub = '' }) {
   return (
     <div className="empty">
-      <div className="e-icon">{icon}</div>
+      <div className="e-icon" aria-hidden="true">{icon}</div>
       <h3>{title}</h3>
       {sub && <p style={{ fontSize: '0.82rem' }}>{sub}</p>}
     </div>
@@ -23,8 +23,8 @@ export function FacTag({ faculty }) {
 
 export function Stars({ rating, size = '0.88rem' }) {
   return (
-    <span className="stars" style={{ fontSize: size }}>
-      {'★'.repeat(rating)}{'☆'.repeat(5 - rating)}
+    <span className="stars" style={{ fontSize: size }} aria-label={`${rating} out of 5 stars`}>
+      <span aria-hidden="true">{'★'.repeat(rating)}{'☆'.repeat(5 - rating)}</span>
     </span>
   );
 }
