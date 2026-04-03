@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useParams, useNavigate } from 'react-router';
 import { getModule, postReview, putReview, postReviewVote, postReviewReport, postReviewComment } from '../api/index';
 import { useAuth } from '../context/AuthContext';
-import { sanitiseRating, sanitiseSlider, requireField } from '../utils/sanitise';
+import { sanitiseField, sanitiseRating, sanitiseSlider, requireField } from '../utils/sanitise';
 import { Loading, Empty, FacTag, Stars, Avatar } from '../components/Shared';
 import Modal from '../components/Modal';
 import toast from 'react-hot-toast';
@@ -120,11 +121,38 @@ function WriteReviewModal({ module, review, onClose, onSaved }) {
   );
 }
 
+function SignInPrompt({ onClose }) {
+  useEffect(() => {
+    const t = setTimeout(onClose, 4000);
+    return () => clearTimeout(t);
+  }, [onClose]);
+
+  return createPortal(
+    <div style={{
+      position: 'fixed', bottom: 24, right: 24, zIndex: 9999,
+      background: '#1a1a1a', border: '1px solid #333',
+      borderRadius: 10, padding: '12px 16px', boxShadow: '0 4px 20px rgba(0,0,0,0.18)',
+      display: 'flex', alignItems: 'center', gap: 12, minWidth: 220,
+    }}>
+      <span style={{ fontSize: '0.85rem', color: '#f0f0f0' }}>
+        Sign in to report a review!
+      </span>
+      <button
+        style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: '1rem', lineHeight: 1 }}
+        onClick={onClose}
+        aria-label="Dismiss"
+      >×</button>
+    </div>,
+    document.body
+  );
+}
+
 function ReviewCard({ review, moduleCode, onRefresh }) {
   const { user } = useAuth();
   const [showComments, setShowComments] = useState(false);
   const [cmtText, setCmtText] = useState('');
   const [editOpen, setEditOpen] = useState(false);
+  const [showSignInPrompt, setShowSignInPrompt] = useState(false);
 
   const isOwn = user && user.id === review.user_id;
   const myVote = review.user_vote;
@@ -136,7 +164,7 @@ function ReviewCard({ review, moduleCode, onRefresh }) {
   };
 
   const handleReport = async () => {
-    if (!user) return;
+    if (!user) { setShowSignInPrompt(true); return; }
     try { await postReviewReport(review.id); toast.info('Reported — admin will review'); }
     catch { toast.error('Failed to report'); }
   };
@@ -162,6 +190,7 @@ function ReviewCard({ review, moduleCode, onRefresh }) {
           onSaved={onRefresh}
         />
       )}
+      {showSignInPrompt && <SignInPrompt onClose={() => setShowSignInPrompt(false)} />}
       <div className="rev-card">
         <div className="rev-top">
           <div className="rev-author">
@@ -184,10 +213,10 @@ function ReviewCard({ review, moduleCode, onRefresh }) {
           <button className={`vote-btn${myVote === 'up' ? ' voted' : ''}`} onClick={() => handleVote('up')}>▲ {review.upvotes || 0}</button>
           <button className={`vote-btn${myVote === 'down' ? ' voted' : ''}`} onClick={() => handleVote('down')}>▼ {review.downvotes || 0}</button>
           <button className="btn-ghost btn-sm" onClick={() => setShowComments((s) => !s)}>
-             {(review.comments || []).length}
+             💬  {(review.comments || []).length}
           </button>
-          {isOwn && <button className="btn-ghost btn-sm" onClick={() => setEditOpen(true)}>️ Edit</button>}
-          {!isOwn && user && <button className="btn-ghost btn-sm" onClick={handleReport}></button>}
+          {isOwn && <button className="btn-ghost btn-sm" onClick={() => setEditOpen(true)}>✍️ Edit</button>}
+          <button className="btn-ghost btn-sm" onClick={handleReport}> 🚩 Report</button>
         </div>
         {showComments && (
           <div className="comments-area">

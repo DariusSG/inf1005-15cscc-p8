@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getReportedReviews, getModules, adminUpdateModule, adminDeleteModule } from '../api/index';
+import { getReportedReviews, getModules, getModule, adminUpdateModule, adminDeleteModule } from '../api/index';
 import client from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import { sanitiseField, requireField } from '../utils/sanitise';
@@ -15,7 +15,7 @@ function EditModuleModal({ module, onClose, onSaved }) {
   const [cred, setCred] = useState(module.credits || 5);
   const [sem, setSem] = useState((module.semesters || []).join(',') || '1');
   const [desc, setDesc] = useState(module.description || '');
-  const [prereq, setPrereq] = useState((module.prereqs || []).join(','));
+  const [prereq, setPrereq] = useState((module.prerequisites || module.prereqs || []).join(','));
   const [saving, setSaving] = useState(false);
 
   const submit = async () => {
@@ -139,6 +139,15 @@ export default function Admin() {
     }
   };
 
+  const handleEditModule = async (code) => {
+    try {
+      const full = await getModule(code);
+      setEditModule(full);
+    } catch {
+      toast.error('Failed to load module');
+    }
+  };
+
   const handleDeleteModule = async (code) => {
     if (!window.confirm(`Delete module ${code}? This cannot be undone.`)) return;
     try {
@@ -250,7 +259,7 @@ export default function Admin() {
                   <td>{m.faculty}</td>
                   <td>{m.credits}</td>
                   <td style={{ display: 'flex', gap: 6 }}>
-                    <button className="btn btn-secondary btn-sm" onClick={() => setEditModule(m)}>Edit</button>
+                    <button className="btn btn-secondary btn-sm" onClick={() => handleEditModule(m.code)}>Edit</button>
                     <button className="btn btn-danger btn-sm" onClick={() => handleDeleteModule(m.code)}>Delete</button>
                   </td>
                 </tr>
