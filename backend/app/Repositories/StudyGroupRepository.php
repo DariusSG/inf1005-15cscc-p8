@@ -29,7 +29,7 @@ class StudyGroupRepository extends BaseRepository
         $search     = $filters['search'] ?? null;
         $authorId   = $filters['author_id'] ?? null;
 
-        $query = StudyGroup::with(['creator:id,name,email', 'module:code,name', 'members:id'])
+        $query = StudyGroup::with(['creator:id,name,email', 'module:code,name'])
             ->withCount('members');
 
         if ($moduleCode) {
@@ -58,7 +58,20 @@ class StudyGroupRepository extends BaseRepository
 
         $paginator = $query->latest()->paginate($perPage, ['*'], 'page', $page);
 
-        $currentUserId = $filters['current_user_id'] ?? null;
+        $currentUserId = isset($filters['current_user_id']) ? (int) $filters['current_user_id'] : null;
+
+        if ($currentUserId !== null) {
+            $membershipByGroupId = StudyGroup::query()
+                ->whereIn('id', collect($paginator->items())->pluck('id')->all())
+                ->whereHas('members', fn($q) => $q->where('users.id', $currentUserId))
+                ->pluck('id')
+                ->flip()
+                ->all();
+
+            foreach ($paginator->items() as $group) {
+                $group->setAttribute('is_member', isset($membershipByGroupId[$group->id]));
+            }
+        }
 
         $groups = collect($paginator->items())
             ->map(fn($g) => self::format($g, $currentUserId))
@@ -163,12 +176,20 @@ class StudyGroupRepository extends BaseRepository
 
     public static function format(StudyGroup $group, ?int $currentUserId = null): array
     {
-        $memberIds = $group->members
-            ->pluck('id')
-            ->map(fn($id) => (int) $id)
-            ->all();
-
         $normalizedCurrentUserId = $currentUserId !== null ? (int) $currentUserId : null;
+
+        $isMember = false;
+        if ($normalizedCurrentUserId !== null) {
+            if ($group->getAttribute('is_member') !== null) {
+                $isMember = (bool) $group->getAttribute('is_member');
+            } elseif ($group->relationLoaded('members')) {
+                $memberIds = $group->members
+                    ->pluck('id')
+                    ->map(fn($id) => (int) $id)
+                    ->all();
+                $isMember = in_array($normalizedCurrentUserId, $memberIds, true);
+            }
+        }
 
         return [
             'id' => $group->id,
@@ -181,7 +202,7 @@ class StudyGroupRepository extends BaseRepository
             'meeting_time' => $group->meeting_time,
             'location' => $group->location,
             'member_count' => (int) ($group->members_count ?? 0),
-            'is_member' => $normalizedCurrentUserId !== null && in_array($normalizedCurrentUserId, $memberIds, true),
+            'is_member' => $isMember,
             'created_at' => $group->created_at,
         ];
     }
