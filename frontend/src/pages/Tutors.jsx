@@ -11,7 +11,7 @@ const RATE_TO_NUM = { '$15/hr': 15, '$20/hr': 20, '$25/hr': 25, '$30/hr': 30, 'F
 
 function ContactModal({ tutor, onClose }) {
   return (
-    <Modal onClose={onClose} className="modal-md">
+    <Modal onClose={onClose} className="modal-md" ariaLabel="Tutor Information">
       <div className="modal-head">
         <h3>Tutor Information</h3>
         <p style={{ color: 'var(--text-secondary)', fontSize: '0.88rem' }}>Contact details for {tutor.name || tutor.user?.name}</p>
@@ -78,7 +78,7 @@ function EditTutorModal({ tutor, onClose, onSaved }) {
   };
 
   return (
-    <Modal onClose={onClose} className="modal-md">
+    <Modal onClose={onClose} className="modal-md" ariaLabel="Edit Tutor Listing">
       <div className="modal-head">
         <h3>Edit Listing</h3>
         <p style={{ color: 'var(--text-secondary)', fontSize: '0.88rem' }}>Update your tutor listing</p>
@@ -182,7 +182,7 @@ function OfferTutorModal({ onClose, onSaved }) {
   };
 
   return (
-    <Modal onClose={onClose} className="modal-md">
+    <Modal onClose={onClose} className="modal-md" ariaLabel="Offer Tutoring">
       <div className="modal-head">
         <h3>Offer Tutoring</h3>
         <p style={{ color: 'var(--text-secondary)', fontSize: '0.88rem' }}>List yourself as a peer tutor (max 5 active)</p>

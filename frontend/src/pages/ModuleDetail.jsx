@@ -54,7 +54,7 @@ function WriteReviewModal({ module, review, onClose, onSaved }) {
   const display = hovered || rating;
 
   return (
-    <Modal onClose={onClose} className="modal-md">
+    <Modal onClose={onClose} className="modal-md" ariaLabel={review ? 'Edit Review' : 'Write Review'}>
       <div className="modal-head">
         <h3>{review ? 'Edit Review' : 'Write a Review'}</h3>
         <p style={{ color: 'var(--text-secondary)', fontSize: '0.88rem' }}>{module.code} — {module.name}</p>

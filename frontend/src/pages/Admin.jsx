@@ -46,7 +46,7 @@ function EditModuleModal({ module, onClose, onSaved }) {
   };
 
   return (
-    <Modal onClose={onClose} className="modal-md">
+    <Modal onClose={onClose} className="modal-md" ariaLabel={`Edit module ${module.code}`}>
       <div className="modal-head">
         <h3>Edit {module.code}</h3>
         <p style={{ color: 'var(--text-secondary)', fontSize: '0.88rem' }}>Update module details</p>

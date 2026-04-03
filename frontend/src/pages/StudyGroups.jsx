@@ -26,7 +26,7 @@ function EditGroupModal({ group, onClose, onSaved }) {
   };
 
   return (
-    <Modal onClose={onClose} className="modal-md">
+    <Modal onClose={onClose} className="modal-md" ariaLabel="Edit Study Group">
       <div className="modal-head">
         <h3>Edit Study Group</h3>
         <p style={{ color: 'var(--text-secondary)', fontSize: '0.88rem' }}>Update group details</p>
@@ -88,7 +88,7 @@ function CreateGroupModal({ onClose, onSaved }) {
   };
 
   return (
-    <Modal onClose={onClose} className="modal-md">
+    <Modal onClose={onClose} className="modal-md" ariaLabel="Create Study Group">
       <div className="modal-head">
         <h3>Create Study Group</h3>
         <p style={{ color: 'var(--text-secondary)', fontSize: '0.88rem' }}>Find students to study with</p>

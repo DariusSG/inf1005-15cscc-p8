@@ -131,7 +131,7 @@ export default function AuthModal({ onClose }) {
     // ── Forgot Password step ──────────────────────────────────────────────────
     if (tab === 'forgot') {
         return (
-            <Modal onClose={onClose} className="modal-sm">
+            <Modal onClose={onClose} className="modal-sm" ariaLabel="Forgot Password">
                 <ForgotPasswordView onBack={() => switchTab('login')} />
             </Modal>
         );
@@ -139,7 +139,7 @@ export default function AuthModal({ onClose }) {
 
     // ── Login / Register tabs ─────────────────────────────────────────────────
     return (
-        <Modal onClose={onClose} className="modal-sm">
+        <Modal onClose={onClose} className="modal-sm" ariaLabel={tab === 'login' ? 'Sign In' : 'Register'}>
             <div className="auth-tabs">
                 <button className={`auth-tab${tab === 'login' ? ' active' : ''}`} onClick={() => switchTab('login')}>
                     Sign In

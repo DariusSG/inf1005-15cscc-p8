@@ -10,7 +10,7 @@ const ALLOWED_URGENCY = ['low', 'medium', 'high'];
 
 function HelpDetailModal({ help, onClose }) {
   return (
-    <Modal onClose={onClose} className="modal-md">
+    <Modal onClose={onClose} className="modal-md" ariaLabel="Help request details">
       <div className="modal-head">
         <h3>{help.title}</h3>
         <p style={{ color: 'var(--text-secondary)', fontSize: '0.88rem' }}>Help request details</p>
@@ -63,7 +63,7 @@ export function EditHelpModal({ help, onClose, onSaved }) {
   };
 
   return (
-    <Modal onClose={onClose} className="modal-md">
+    <Modal onClose={onClose} className="modal-md" ariaLabel="Edit Help Request">
       <div className="modal-head">
         <h3>Edit Help Request</h3>
         <p style={{ color: 'var(--text-secondary)', fontSize: '0.88rem' }}>Update your request details</p>
