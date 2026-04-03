@@ -213,7 +213,10 @@ class HelpRequestRepository extends BaseRepository
             return false;
         }
 
-        return (bool) $req->delete();
+        $req->delete();
+        $req->forceDelete();
+
+        return true;
     }
 
     /**

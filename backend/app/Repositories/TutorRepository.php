@@ -133,7 +133,10 @@ class TutorRepository extends BaseRepository
             return false;
         }
 
-        return (bool) $tutor->delete();
+        $tutor->delete();
+        $tutor->forceDelete();
+
+        return true;
     }
 
     public static function format(Tutor $tutor): array

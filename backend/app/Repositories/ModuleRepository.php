@@ -124,7 +124,11 @@ class ModuleRepository extends BaseRepository
 
     public static function delete(string $code): void
     {
-        Module::where('code', $code)->delete();
+        $module = Module::where('code', $code);
+        if ($module->exists()) {
+            $module->delete();
+            $module->forceDelete();
+        }
     }
 
     /**
