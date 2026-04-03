@@ -161,7 +161,7 @@ class ReviewController
         }
     }
 
-    #[OA\Post(
+    #[OA\Put(
         path: "/reviews/{id}",
         summary: "Edit your own review",
         tags: ["Reviews"],
