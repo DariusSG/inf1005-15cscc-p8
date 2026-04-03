@@ -19,7 +19,7 @@ export const postReview = (data) =>
   client.post('/reviews', data).then((r) => r.data);
 
 export const putReview = (id, data) =>
-  client.post(`/reviews/${id}`, data).then((r) => r.data);
+  client.put(`/reviews/${id}`, data).then((r) => r.data);
 
 export const postReviewVote = (id, direction) =>
   client.post(`/reviews/${id}/vote`, { type: direction }).then((r) => r.data);
@@ -58,6 +58,9 @@ export const postHelpSolve = (id) =>
 
 export const putHelpRequest = (id, data) =>
   client.put(`/help-requests/${id}`, data).then((r) => r.data);
+
+export const deleteHelpRequest = (id) =>
+  client.delete(`/help-requests/${id}`).then((r) => r.data);
 
 // ── Study Groups ──────────────────────────────────────────
 export const getStudyGroups = (params) =>

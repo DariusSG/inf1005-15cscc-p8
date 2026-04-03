@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getHelpRequests, postHelpRequest, putHelpRequest, postHelpSolve, getModules } from '../api/index';
+import { getHelpRequests, postHelpRequest, putHelpRequest, postHelpSolve, deleteHelpRequest, getModules } from '../api/index';
 import { useAuth } from '../context/AuthContext';
 import { sanitiseField, sanitiseBounty, requireField } from '../utils/sanitise';
 import { Loading, Empty, UrgencyBadge, BountyTag, SolvedTag } from '../components/Shared';
@@ -257,6 +257,17 @@ export default function Help() {
     catch { toast.error('Failed to update'); }
   };
 
+  const handleDelete = async (id) => {
+    if (!window.confirm('Delete this request? This cannot be undone.')) return;
+    try {
+      await deleteHelpRequest(id);
+      toast.success('Help request deleted');
+      load();
+    } catch (e) {
+      toast.error(e.response?.data?.message || 'Failed to delete');
+    }
+  };
+
   const filtered = helpReqs.filter((h) => {
     const q = search.toLowerCase();
     return !q || h.title?.toLowerCase().includes(q) || (h.module || h.moduleCode || '').toLowerCase().includes(q);
@@ -299,6 +310,7 @@ export default function Help() {
                 <div className="help-actions">
                   {isOwn && !solved && <button className="btn btn-secondary btn-sm" onClick={() => setEditItem(h)}>Edit</button>}
                   {isOwn && !solved && <button className="btn btn-success btn-sm" onClick={() => handleSolve(h.id)}>✓ Solved</button>}
+                  {isOwn && <button className="btn btn-danger btn-sm" onClick={() => handleDelete(h.id)}>Delete</button>}
                   {!isOwn && <button className="btn btn-secondary btn-sm" onClick={() => setDetailItem(h)}>View Details</button>}
                 </div>
               </div>

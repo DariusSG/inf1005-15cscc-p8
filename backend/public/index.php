@@ -70,7 +70,7 @@ $router->prefix('/api/v1', function ($router) {
         // Reviews
         $router->get('/reviews',                'ReviewController@index');
         $router->post('/reviews',               'ReviewController@store');
-        $router->post('/reviews/{id}',          'ReviewController@update');
+        $router->put('/reviews/{id}',          'ReviewController@update');
         $router->post('/reviews/{id}/vote',     'ReviewController@vote');
         $router->post('/reviews/{id}/report',   'ReviewController@report');
         $router->post('/reviews/{id}/comments', 'ReviewController@addComment');
