@@ -27,7 +27,6 @@ class ReviewController
         path: "/reviews",
         summary: "List reviews (paginated, filtered)",
         tags: ["Reviews"],
-        security: [["bearerAuth" => []]],
         parameters: [
             new OA\Parameter(
                 parameter: "QueryPage",
@@ -276,7 +275,7 @@ class ReviewController
 
     #[OA\Post(
         path: "/reviews/{id}/report",
-        summary: "Toggle report on a review",
+        summary: "Report a review",
         tags: ["Reviews"],
         security: [["bearerAuth" => []]],
         parameters: [
