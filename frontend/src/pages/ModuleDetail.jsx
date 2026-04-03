@@ -138,7 +138,7 @@ function SignInPrompt({ onClose }) {
         Sign in to report a review!
       </span>
       <button
-        style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: '1rem', lineHeight: 1 }}
+        style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', color: '#888', fontSize: '1rem', lineHeight: 1 }}
         onClick={onClose}
         aria-label="Dismiss"
       >×</button>
