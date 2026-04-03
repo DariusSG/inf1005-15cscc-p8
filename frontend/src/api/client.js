@@ -38,6 +38,14 @@ client.interceptors.response.use(
   (res) => res,
   async (err) => {
     const originalRequest = err.config;
+
+    // Skip refresh for auth endpoints to prevent infinite loops and preserve their original error messages (very important)
+    const url = originalRequest?.url || '';
+    if (url.includes('/auth/login') || url.includes('/auth/register') || url.includes('/auth/refresh') || url.includes('/auth/password')) {
+      clearAccessToken();
+      return Promise.reject(err);
+    }
+
     if (err.response?.status === 401 && !originalRequest._retry) {
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
