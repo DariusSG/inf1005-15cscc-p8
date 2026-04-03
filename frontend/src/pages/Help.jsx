@@ -306,7 +306,7 @@ export default function Help() {
               </div>
               <div className="help-desc">{h.description || h.desc}</div>
               <div className="help-footer">
-                <span className="help-meta">{(h.contactEmail || '').split('@')[0]}</span>
+                <span className="help-meta">{h.author}</span>
                 <div className="help-actions">
                   {isOwn && !solved && <button className="btn btn-secondary btn-sm" onClick={() => setEditItem(h)}>Edit</button>}
                   {isOwn && !solved && <button className="btn btn-success btn-sm" onClick={() => handleSolve(h.id)}>✓ Solved</button>}

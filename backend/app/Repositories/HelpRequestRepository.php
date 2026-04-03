@@ -23,7 +23,8 @@ use OpenApi\Attributes as OA;
         new OA\Property(property: "hasBounty", type: "boolean"),
         new OA\Property(property: "bountyAmount", type: "number"),
         new OA\Property(property: "status", type: "string"),
-        new OA\Property(property: "created_at", type: "string", format: "date-time")
+        new OA\Property(property: "created_at", type: "string", format: "date-time"),
+        new OA\Property(property: "author", type: "string", nullable: true)
     ]
 )]
 #[OA\Schema(
@@ -61,7 +62,7 @@ class HelpRequestRepository extends BaseRepository
         $search     = $filters['search'] ?? null;
         $authorId   = $filters['author_id'] ?? null;
 
-        $query = HelpRequest::with(['author:id,email', 'responses.author:id,email']);
+        $query = HelpRequest::with(['author:id,name,email', 'responses.author:id,email']);
 
         if ($moduleCode) {
             $query->where('module_code', $moduleCode);
@@ -111,7 +112,7 @@ class HelpRequestRepository extends BaseRepository
      */
     public static function all(?string $search = null): array
     {
-        $q = HelpRequest::with(['author:id,email', 'responses.author:id,email']);
+        $q = HelpRequest::with(['author:id,name,email', 'responses.author:id,email']);
 
         if ($search) {
             $escaped = self::escapeSearch($search);
@@ -141,7 +142,7 @@ class HelpRequestRepository extends BaseRepository
      */
     public static function find(int $id): ?HelpRequest
     {
-        return HelpRequest::with(['author:id,email', 'responses.author:id,email'])->find($id);
+        return HelpRequest::with(['author:id,name,email', 'responses.author:id,email'])->find($id);
     }
 
 
@@ -152,7 +153,7 @@ class HelpRequestRepository extends BaseRepository
     {
         $req = HelpRequest::findOrFail($id);
         $req->update($data);
-        return $req->fresh(['author:id,email', 'responses.author:id,email']);
+        return $req->fresh(['author:id,name,email', 'responses.author:id,email']);
     }
 
     /**
@@ -171,7 +172,7 @@ class HelpRequestRepository extends BaseRepository
                 'status'     => 'open',
             ], $data));
 
-            return $req->load(['author:id,email', 'responses']);
+            return $req->load(['author:id,name,email', 'responses']);
         });
     }
 
@@ -202,7 +203,7 @@ class HelpRequestRepository extends BaseRepository
     {
         $req = HelpRequest::findOrFail($id);
         $req->update(['status' => 'solved']);
-        return $req->fresh(['author:id,email', 'responses.author:id,email']);
+        return $req->fresh(['author:id,name,email', 'responses.author:id,email']);
     }
 
     public static function delete(int $id): bool
@@ -226,6 +227,7 @@ class HelpRequestRepository extends BaseRepository
         return [
             'id'           => $req->id,
             'userEmail'    => $req->author?->email,
+            'author'       => $req->author?->name,
             'title'        => $req->title,
             'module'       => $req->module_code,
             'desc'         => $req->description,

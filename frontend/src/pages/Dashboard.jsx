@@ -53,7 +53,7 @@ function ChangePasswordSection() {
                     <input
                         id="cp-new"
                         type="password"
-                        placeholder="Min 6 characters"
+                        placeholder="Min 8 characters"
                         value={newPw}
                         onChange={(e) => setNewPw(e.target.value)}
                         autoComplete="new-password"

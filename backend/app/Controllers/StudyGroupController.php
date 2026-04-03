@@ -81,37 +81,6 @@ class StudyGroupController
         ]);
     }
 
-    #[OA\Post(
-        path: "/study-groups",
-        summary: "Create a new study group",
-        tags: ["Study Groups"],
-        security: [["bearerAuth" => []]],
-        requestBody: new OA\RequestBody(
-            required: true,
-            content: new OA\JsonContent(
-                required: ["name", "module_code"],
-                properties: [
-                    new OA\Property(property: "name", type: "string"),
-                    new OA\Property(property: "module_code", type: "string"),
-                    new OA\Property(property: "description", type: "string", nullable: true),
-                    new OA\Property(property: "meeting_time", type: "string", nullable: true),
-                    new OA\Property(property: "location", type: "string", nullable: true)
-                ]
-            )
-        ),
-        responses: [
-            new OA\Response(
-                response: 201, 
-                description: "Study group created", 
-                content: new OA\JsonContent(ref: "#/components/schemas/StudyGroup")
-            ),
-            new OA\Response(
-                response: 400, 
-                description: "Validation error", 
-                content: new OA\JsonContent(ref: "#/components/schemas/ErrorResponse")
-            )
-        ]
-    )]
     #[OA\Put(
         path: "/study-groups/{id}",
         summary: "Update a study group",
@@ -164,17 +133,55 @@ class StudyGroupController
         }
     }
 
+    #[OA\Post(
+        path: "/study-groups",
+        summary: "Create a new study group",
+        tags: ["Study Groups"],
+        security: [["bearerAuth" => []]],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                required: ["name", "module_code"],
+                properties: [
+                    new OA\Property(property: "name", type: "string"),
+                    new OA\Property(property: "module_code", type: "string"),
+                    new OA\Property(property: "description", type: "string"),
+                    new OA\Property(property: "meeting_time", type: "string"),
+                    new OA\Property(property: "location", type: "string")
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(
+                response: 201, 
+                description: "Study group created", 
+                content: new OA\JsonContent(ref: "#/components/schemas/StudyGroup")
+            ),
+            new OA\Response(
+                response: 400, 
+                description: "Validation error", 
+                content: new OA\JsonContent(ref: "#/components/schemas/ErrorResponse")
+            )
+        ]
+    )]
     public function store()
     {
         $userId = JwtMiddleware::userId();
         $data   = Request::body();
 
         try {
-            $name        = Validators::stringCheck($data['name'] ?? '', 'Title', 150);
-            $moduleCode  = Validators::moduleCode($data['module_code'] ?? null);
-            $description = isset($data['description'])  ? Validators::stringCheck($data['description'],'Content', 500) : null;
-            $location    = isset($data['location'])      ? Validators::stringCheck($data['location'], 'Content', 150)  : null;
-            $meetingTime = isset($data['meeting_time'])  ? Validators::stringCheck($data['meeting_time'], 'Content', 100)  : null;
+            $requiredFields = ['name', 'module_code', 'description', 'location', 'meeting_time'];
+            foreach ($requiredFields as $field) {
+                if (!array_key_exists($field, $data)) {
+                    Response::json(['message' => "{$field} is required", 'code' => 'API_ERROR'], 400);
+                }
+            }
+
+            $name        = Validators::stringCheck($data['name'], 'Title', 150);
+            $moduleCode  = Validators::moduleCode($data['module_code']);
+            $description = Validators::stringCheck($data['description'], 'Content', 500);
+            $location    = Validators::stringCheck($data['location'], 'Content', 150);
+            $meetingTime = Validators::stringCheck($data['meeting_time'], 'Content', 100);
 
             $group = StudyGroupRepository::create([
                 'user_id'      => $userId,

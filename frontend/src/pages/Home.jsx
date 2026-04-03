@@ -40,7 +40,7 @@ export default function Home() {
               With sitizens, you can read honest reviews from students who've taken the modules, find peer tutors, get help when you're stuck, and connect with study groups as well. Be a 
             </p>
             <p className="subtitle-mobile">
-              Facing issues navigating the site? Email iloveinf1005@sit.singaporetech.edu.sg for any queries.
+              Facing issues navigating the site? Email cscc@dariussg.dev for any queries.
             </p>
           </div>
 

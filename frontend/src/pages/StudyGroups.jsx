@@ -78,7 +78,7 @@ function CreateGroupModal({ onClose, onSaved }) {
     if (!name.trim()) { toast.error('Group name required'); return; }
     setLoading(true);
     try {
-      await postStudyGroup({ name, module_code: moduleCode, description: desc, meeting_time: meetingTime, location, maxSize });
+      await postStudyGroup({ name, module_code: moduleCode, description: desc, meeting_time: meetingTime, location });
       toast.success('Study group created!');
       onSaved();
       onClose();
@@ -117,12 +117,6 @@ function CreateGroupModal({ onClose, onSaved }) {
         <div className="form-group">
           <label>Location</label>
           <input type="text" placeholder="e.g. Library Level 3" value={location} onChange={(e) => setLocation(e.target.value)} />
-        </div>
-        <div className="form-group">
-          <label>Max Group Size</label>
-          <select value={maxSize} onChange={(e) => setMaxSize(+e.target.value)}>
-            {[2, 3, 4, 5, 6, 8, 10].map((n) => <option key={n} value={n}>{n} people</option>)}
-          </select>
         </div>
         <button
           className="btn btn-primary"
@@ -219,13 +213,13 @@ export default function StudyGroups() {
                 <div className="help-mod">{g.module_code}</div>
               </div>
               <span style={{ fontFamily: 'var(--mono)', fontSize: '0.76rem', color: 'var(--text-muted)' }}>
-                {g.memberCount || 1}/{g.maxSize} members
+                {g.member_count} members
               </span>
             </div>
             {g.description && <div className="help-desc">{g.description}</div>}
             <div className="help-footer">
               <span className="help-meta">
-                Created by {g.creator?.name || 'Unknown'} · {g.createdAt?.split('T')[0]}
+                Created by {g.author || 'Unknown'} · {g.created_at?.split('T')[0]}
                 {g.meeting_time && ` · ${g.meeting_time}`}
                 {g.location && ` · ${g.location}`}
               </span>
@@ -239,7 +233,6 @@ export default function StudyGroups() {
                   ) : (
                     <button
                       className="btn btn-primary btn-sm"
-                      disabled={g.memberCount >= g.maxSize}
                       onClick={() => handleJoin(g)}
                     >
                       {g.memberCount >= g.maxSize ? 'Full' : 'Join Group'}
