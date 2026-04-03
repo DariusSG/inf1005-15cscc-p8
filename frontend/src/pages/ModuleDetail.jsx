@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router';
 import { getModule, postReview, putReview, postReviewVote, postReviewReport, postReviewComment } from '../api/index';
 import { useAuth } from '../context/AuthContext';
-import { sanitiseField, sanitiseRating, sanitiseSlider, requireField } from '../utils/sanitise';
+import { sanitiseRating, sanitiseSlider, requireField } from '../utils/sanitise';
 import { Loading, Empty, FacTag, Stars, Avatar } from '../components/Shared';
 import Modal from '../components/Modal';
 import toast from 'react-hot-toast';
@@ -243,10 +243,10 @@ export default function ModuleDetail() {
   if (!mod) return <div className="page-section"><Empty icon="" title="Module not found" /></div>;
 
   const reviews = mod.reviews || [];
-  const avg = reviews.length ? (reviews.reduce((s, r) => s + r.rating, 0) / reviews.length).toFixed(1) : null;
-  const aW = reviews.length ? (reviews.reduce((s, r) => s + r.workload, 0) / reviews.length).toFixed(1) : '—';
-  const aD = reviews.length ? (reviews.reduce((s, r) => s + r.difficulty, 0) / reviews.length).toFixed(1) : '—';
-  const aU = reviews.length ? (reviews.reduce((s, r) => s + r.usefulness, 0) / reviews.length).toFixed(1) : '—';
+  const avg = reviews.length ? (reviews.reduce((s, r) => s + +r.rating, 0) / reviews.length).toFixed(1) : null;
+  const aW = reviews.length ? (reviews.reduce((s, r) => s + +r.workload, 0) / reviews.length).toFixed(1) : '—';
+  const aD = reviews.length ? (reviews.reduce((s, r) => s + +r.difficulty, 0) / reviews.length).toFixed(1) : '—';
+  const aU = reviews.length ? (reviews.reduce((s, r) => s + +r.usefulness, 0) / reviews.length).toFixed(1) : '—';
 
   return (
     <div className="page-section">
