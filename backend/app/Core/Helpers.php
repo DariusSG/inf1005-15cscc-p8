@@ -33,15 +33,18 @@ class Helpers
         $parts = explode('.', $key);
         $temp = &$config;
 
-        // Navigate/build the nested array structure
         foreach ($parts as $part) {
-            if (!isset($temp[$part]) || !is_array($temp[$part])) {
-                $temp[$part] = [];
+            // If we aren't at the last part, ensure the path exists as an array
+            if ($part !== end($parts)) {
+                if (!isset($temp[$part]) || !is_array($temp[$part])) {
+                    $temp[$part] = [];
+                }
+                $temp = &$temp[$part];
+            } else {
+                // We are at the final key, set the value
+                $temp[$part] = $value;
             }
-            $temp = &$temp[$part];
         }
-
-        $temp = $value;
         self::$cfg = $config;
 
         // Persist to disk

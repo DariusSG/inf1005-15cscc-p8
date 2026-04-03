@@ -8,8 +8,9 @@ class CorsMiddleware implements Middleware
 {
     private static function getAllowedOrigins(): array
     {
-        $origins = explode(',', Helpers::config('cors.allowed_origins', ''));
-        // Trim and remove trailing slashes from configured origins
+        $rawConfig = Helpers::config('cors.allowed_origins', '');
+        $origins = explode(',', $rawConfig);
+
         return array_filter(array_map(function($o) {
             return rtrim(trim($o), '/');
         }, $origins));
@@ -18,15 +19,10 @@ class CorsMiddleware implements Middleware
     private static function isOriginAllowed(): bool
     {
         $origin = rtrim($_SERVER['HTTP_ORIGIN'] ?? '', '/');
+        
+        if ($origin === '') return false;
+
         $allowed = self::getAllowedOrigins();
-
-        if ($origin === '') {
-            return false;
-        }
-
-        if (empty($allowed)) {
-            return true;
-        }
 
         return in_array($origin, $allowed, true);
     }
@@ -36,10 +32,10 @@ class CorsMiddleware implements Middleware
     {
         $origin = rtrim($_SERVER['HTTP_ORIGIN'] ?? '', '/');
 
-        // Only echo the origin when present and allowed; add Vary header to avoid proxy caching issues
         if ($origin !== '' && self::isOriginAllowed()) {
+            // Dynamically echo the matched origin
             header("Access-Control-Allow-Origin: $origin");
-            header('Vary: Origin');
+            header('Vary: Origin'); // Crucial for CDNs/Proxies
             header('Access-Control-Allow-Credentials: true');
         }
 
