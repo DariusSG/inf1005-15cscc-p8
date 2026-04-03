@@ -132,7 +132,7 @@ function CreateGroupModal({ onClose, onSaved }) {
 }
 
 export default function StudyGroups() {
-  const { user } = useAuth();
+  const { user, authLoading } = useAuth();
   const [groups, setGroups] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -168,7 +168,11 @@ export default function StudyGroups() {
     }
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    if (!authLoading) {
+      load();
+    }
+  }, [authLoading, user]);
 
   const filtered = groups.filter((g) => {
     const q = search.toLowerCase();
