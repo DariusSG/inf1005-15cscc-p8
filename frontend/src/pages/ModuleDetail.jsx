@@ -167,7 +167,7 @@ function ReviewCard({ review, moduleCode, onRefresh }) {
 
   const handleReport = async () => {
     if (!user) { setShowSignInPrompt(true); return; }
-    try { await postReviewReport(review.id); toast.info('Reported — admin will review'); }
+    try { await postReviewReport(review.id); toast.success('Reported — admin will review'); }
     catch { toast.error('Failed to report'); }
   };
 

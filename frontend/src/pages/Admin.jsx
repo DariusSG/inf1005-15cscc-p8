@@ -132,7 +132,7 @@ export default function Admin() {
           client.delete('/admin/reviews/report', { params: { review_id: reviewId, user_id: uid } })
         )
       );
-      toast.info('Reports dismissed');
+      toast.success('Reports dismissed');
       loadReported();
     } catch {
       toast.error('Failed to dismiss');
