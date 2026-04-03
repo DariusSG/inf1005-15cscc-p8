@@ -27,7 +27,7 @@ function WriteReviewModal({ module, review, onClose, onSaved }) {
     if (contentErr) { toast.error(contentErr); return; }
 
     const payload = {
-      moduleCode: module.code,
+      module_code: module.code,
       rating: cleanRating,
       title: cleanTitle,
       content: cleanContent,
