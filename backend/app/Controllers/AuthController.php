@@ -76,7 +76,7 @@ class AuthController
             Response::json(['message' => 'If that email is valid, a registration link has been sent.']);
         } catch (InvalidArgumentException $e) {
             Logger::channel()->error('Error at AuthController@requestRegistration', ['exception' => $e]);
-            Response::json(['message' => 'Invalid registration data', 'code' => 'API_ERROR'], 400);
+            Response::json(['message' => 'Invalid registration data. Have you registered before?', 'code' => 'API_ERROR'], 400);
         } catch (RuntimeException|Exception $e) {
             Logger::channel()->error('Error at AuthController@requestRegistration', ['exception' => $e]);
             Response::json(['message' => 'An unexpected error occurred', 'code' => 'API_ERROR'], 500);

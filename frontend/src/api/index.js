@@ -69,6 +69,12 @@ export const postStudyGroup = (data) =>
 export const putStudyGroup = (id, data) =>
   client.put(`/study-groups/${id}`, data).then((r) => r.data);
 
+export const postStudyGroupJoin = (id) =>
+  client.post(`/study-groups/${id}/join`).then((r) => r.data);
+
+export const postStudyGroupLeave = (id) =>
+  client.post(`/study-groups/${id}/leave`).then((r) => r.data);
+
 // ── Admin ─────────────────────────────────────────────────
 export const getReportedReviews = (params) =>
   client.get('/admin/reviews/report', { params }).then((r) => r.data);

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getStudyGroups, postStudyGroup, putStudyGroup, getModules } from '../api/index';
+import { getStudyGroups, postStudyGroup, putStudyGroup, postStudyGroupJoin, postStudyGroupLeave, getModules } from '../api/index';
 import { useAuth } from '../context/AuthContext';
 import { Loading, Empty } from '../components/Shared';
 import Modal from '../components/Modal';
@@ -61,6 +61,8 @@ function CreateGroupModal({ onClose, onSaved }) {
   const [name, setName] = useState('');
   const [moduleCode, setModuleCode] = useState('');
   const [desc, setDesc] = useState('');
+  const [meetingTime, setMeetingTime] = useState('');
+  const [location, setLocation] = useState('');
   const [maxSize, setMaxSize] = useState(5);
   const [loading, setLoading] = useState(false);
 
@@ -76,7 +78,7 @@ function CreateGroupModal({ onClose, onSaved }) {
     if (!name.trim()) { toast.error('Group name required'); return; }
     setLoading(true);
     try {
-      await postStudyGroup({ name, module_code: moduleCode, description: desc, maxSize });
+      await postStudyGroup({ name, module_code: moduleCode, description: desc, meeting_time: meetingTime, location, maxSize });
       toast.success('Study group created!');
       onSaved();
       onClose();
@@ -107,6 +109,14 @@ function CreateGroupModal({ onClose, onSaved }) {
         <div className="form-group">
           <label>Description</label>
           <textarea placeholder="What will you study, when do you meet..." value={desc} onChange={(e) => setDesc(e.target.value)} rows={2} />
+        </div>
+        <div className="form-group">
+          <label>Meeting Time</label>
+          <input type="text" placeholder="e.g. Wednesdays 6pm" value={meetingTime} onChange={(e) => setMeetingTime(e.target.value)} />
+        </div>
+        <div className="form-group">
+          <label>Location</label>
+          <input type="text" placeholder="e.g. Library Level 3" value={location} onChange={(e) => setLocation(e.target.value)} />
         </div>
         <div className="form-group">
           <label>Max Group Size</label>
@@ -140,6 +150,28 @@ export default function StudyGroups() {
     getStudyGroups()
       .then((data) => setGroups(Array.isArray(data) ? data : data.data || []))
       .finally(() => setLoading(false));
+  };
+
+  const handleJoin = async (group) => {
+    if (!user) { toast.error('Sign in first'); return; }
+    try {
+      const result = await postStudyGroupJoin(group.id);
+      toast.success(result.joined ? 'Joined group!' : 'Already a member.');
+      setGroups((prev) => prev.map((g) => (g.id === group.id ? result.group : g)));
+    } catch (e) {
+      toast.error(e.response?.data?.message || 'Failed to join');
+    }
+  };
+
+  const handleLeave = async (group) => {
+    if (!user) { toast.error('Sign in first'); return; }
+    try {
+      const result = await postStudyGroupLeave(group.id);
+      toast.success(result.left ? 'Left group.' : 'Could not leave group.');
+      setGroups((prev) => prev.map((g) => (g.id === group.id ? result.group : g)));
+    } catch (e) {
+      toast.error(e.response?.data?.message || 'Failed to leave');
+    }
   };
 
   useEffect(() => { load(); }, []);
@@ -194,13 +226,25 @@ export default function StudyGroups() {
             <div className="help-footer">
               <span className="help-meta">
                 Created by {g.creator?.name || 'Unknown'} · {g.createdAt?.split('T')[0]}
+                {g.meeting_time && ` · ${g.meeting_time}`}
+                {g.location && ` · ${g.location}`}
               </span>
               <div className="help-actions">
                 {user && g.user_id === user.id && (
                   <button className="btn btn-secondary btn-sm" onClick={() => setEditGroup(g)}>Edit</button>
                 )}
-                {g.memberCount < g.maxSize && (
-                  <button className="btn btn-primary btn-sm">Join Group</button>
+                {user && g.user_id !== user.id && (
+                  g.is_member ? (
+                    <button className="btn btn-secondary btn-sm" onClick={() => handleLeave(g)}>Leave Group</button>
+                  ) : (
+                    <button
+                      className="btn btn-primary btn-sm"
+                      disabled={g.memberCount >= g.maxSize}
+                      onClick={() => handleJoin(g)}
+                    >
+                      {g.memberCount >= g.maxSize ? 'Full' : 'Join Group'}
+                    </button>
+                  )
                 )}
               </div>
             </div>

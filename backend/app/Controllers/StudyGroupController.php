@@ -66,10 +66,13 @@ class StudyGroupController
             Response::json(['message' => 'Invalid query parameters', 'code' => 'API_ERROR'], 400);
         }
 
+        $currentUserId = JwtMiddleware::userId();
+
         $result = StudyGroupRepository::paginate([
             'module_code' => $moduleCode,
             'search' => $search,
             'author_id' => $author_id,
+            'current_user_id' => $currentUserId,
         ], $perPage, $page);
 
         Response::json([
@@ -220,7 +223,7 @@ class StudyGroupController
 
         Response::json([
             'joined' => $result['joined'],
-            'group' => $result['group'],
+            'group' => StudyGroupRepository::format(StudyGroupRepository::find($id), $userId),
         ]);
     }
 
@@ -255,7 +258,7 @@ class StudyGroupController
 
         Response::json([
             'left' => $result['left'],
-            'group' => $result['group'],
+            'group' => StudyGroupRepository::format(StudyGroupRepository::find($id), $userId),
         ]);
     }
 

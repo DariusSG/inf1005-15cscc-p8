@@ -22,7 +22,6 @@ export default function Home() {
     <div className="welcome-page">
       <div className="welcome-layout">
 
-        {/* Left — hero text + stats */}
         <div className="welcome-left">
           <div className="welcome-hero">
             <div className="welcome-eyebrow">Welcome to SITizens!</div>
@@ -39,6 +38,9 @@ export default function Home() {
             </p>
             <p className="tagline-mobile">
               With sitizens, you can read honest reviews from students who've taken the modules, find peer tutors, get help when you're stuck, and connect with study groups as well. Be a 
+            </p>
+            <p className="subtitle-mobile">
+              Facing issues navigating the site? Email iloveinf1005@sit.singaporetech.edu.sg for any queries.
             </p>
           </div>
 
@@ -64,20 +66,20 @@ export default function Home() {
 
         {/* Right — stacked cards */}
         <div className="home-cards">
-          <div className="home-card c-mod" onClick={() => navigate('/modules')} role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate('/modules'); } }}>
+          <div className="home-card c-mod" onClick={() => navigate('/modules')}>
             <div className="hc-title">Module Reviews</div>
             <div className="hc-desc">Browse ratings, workload, difficulty and usefulness scores across all SIT faculties. See what other students really think before you enrol.</div>
-            <div className="hc-stat"><span className="dot" aria-hidden="true" /><span>{stats.modules}</span> modules</div>
+            <div className="hc-stat"><span className="dot" /><span>{stats.modules}</span> modules</div>
           </div>
-          <div className="home-card c-tut" onClick={() => navigate('/tutors')} role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate('/tutors'); } }}>
+          <div className="home-card c-tut" onClick={() => navigate('/tutors')}>
             <div className="hc-title">Tutor Finder</div>
             <div className="hc-desc">Struggling with a module? Find a peer tutor who's already aced it, or list yourself and help others while earning on the side.</div>
-            <div className="hc-stat"><span className="dot" aria-hidden="true" /><span>{stats.tutors}</span> tutors listed</div>
+            <div className="hc-stat"><span className="dot" /><span>{stats.tutors}</span> tutors listed</div>
           </div>
-          <div className="home-card c-hlp" onClick={() => navigate('/help')} role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate('/help'); } }}>
+          <div className="home-card c-hlp" onClick={() => navigate('/help')}>
             <div className="hc-title">Help Requests</div>
             <div className="hc-desc">Post a quick help request when you're stuck on an assignment or concept. Other students can respond — optionally with a bounty reward.</div>
-            <div className="hc-stat"><span className="dot" aria-hidden="true" /><span>{stats.openHelp}</span> open requests</div>
+            <div className="hc-stat"><span className="dot" /><span>{stats.openHelp}</span> open requests</div>
           </div>
         </div>
 

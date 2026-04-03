@@ -27,7 +27,7 @@ class StudyGroupRepository extends BaseRepository
         $search     = $filters['search'] ?? null;
         $authorId   = $filters['author_id'] ?? null;
 
-        $query = StudyGroup::with(['creator:id,name,email', 'module:code,name'])
+        $query = StudyGroup::with(['creator:id,name,email', 'module:code,name', 'members:id'])
             ->withCount('members');
 
         if ($moduleCode) {
@@ -56,8 +56,10 @@ class StudyGroupRepository extends BaseRepository
 
         $paginator = $query->latest()->paginate($perPage, ['*'], 'page', $page);
 
+        $currentUserId = $filters['current_user_id'] ?? null;
+
         $groups = collect($paginator->items())
-            ->map(fn($g) => self::format($g))
+            ->map(fn($g) => self::format($g, $currentUserId))
             ->all();
 
         return [
@@ -157,8 +159,10 @@ class StudyGroupRepository extends BaseRepository
         return (bool) $group->delete();
     }
 
-    public static function format(StudyGroup $group): array
+    public static function format(StudyGroup $group, ?int $currentUserId = null): array
     {
+        $memberIds = $group->members->pluck('id')->all();
+
         return [
             'id' => $group->id,
             'user_id' => $group->creator ? $group->user_id : -1,
@@ -169,6 +173,10 @@ class StudyGroupRepository extends BaseRepository
             'meeting_time' => $group->meeting_time,
             'location' => $group->location,
             'member_count' => (int) ($group->members_count ?? 0),
+            'memberCount' => (int) ($group->members_count ?? 0),
+            'maxSize' => (int) ($group->max_size ?? 0),
+            'max_size' => (int) ($group->max_size ?? 0),
+            'is_member' => $currentUserId !== null && in_array($currentUserId, $memberIds, true),
             'created_at' => $group->created_at,
         ];
     }

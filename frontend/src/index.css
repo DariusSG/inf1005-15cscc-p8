@@ -1668,6 +1668,12 @@ textarea {
     letter-spacing: 1px
 }
 
+.welcome-hero .subtitle-mobile {
+    font-size: 0.8rem;
+    color: #777;
+    margin-top: 8px
+}
+
 @media(max-width:768px) {
     .sidebar {
         width: 60px;
