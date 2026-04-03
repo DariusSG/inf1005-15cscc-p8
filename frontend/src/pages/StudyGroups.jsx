@@ -225,7 +225,7 @@ export default function StudyGroups() {
             {g.description && <div className="help-desc">{g.description}</div>}
             <div className="help-footer">
               <span className="help-meta">
-                Created by {g.author || 'Unknown'} · {g.createdAt?.split('T')[0]}
+                Created by {g.author || 'Unknown'} · {g.created_at?.split('T')[0]}
                 {g.meeting_time && ` · ${g.meeting_time}`}
                 {g.location && ` · ${g.location}`}
               </span>
