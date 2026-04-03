@@ -21,6 +21,7 @@ class StudyGroupController
         path: "/study-groups",
         summary: "List study groups (paginated)",
         tags: ["Study Groups"],
+        security: [["bearerAuth" => []]],
         parameters: [
             new OA\Parameter(
                 parameter: "QueryPage",
@@ -64,6 +65,10 @@ class StudyGroupController
             $author_id = Validators::optionalPositiveInt(Request::query('user_id', null), 'user_id');
         } catch (\InvalidArgumentException $e) {
             Response::json(['message' => 'Invalid query parameters', 'code' => 'API_ERROR'], 400);
+        }
+
+        if (Request::header('Authorization')) {
+            JwtMiddleware::handle();
         }
 
         $currentUserId = JwtMiddleware::userId();
