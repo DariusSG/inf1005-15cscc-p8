@@ -90,6 +90,10 @@ export const adminUpdateModule = (code, data) =>
 
 export const adminDeleteModule = (code) =>
   client.delete(`/admin/modules/${code}`).then((r) => r.data);
+
+export const adminDeleteReview = (id) =>
+  client.delete(`/admin/reviews/${id}`).then((r) => r.data);
+
 // ── Users ─────────────────────────────────────────────────
 export const getUsers = (params) =>
   client.get('/users', { params }).then((r) => r.data);

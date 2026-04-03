@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getReportedReviews, getModules, getModule, adminUpdateModule, adminDeleteModule } from '../api/index';
+import { getReportedReviews, getModules, getModule, adminUpdateModule, adminDeleteModule, adminDeleteReview } from '../api/index';
 import client from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import { sanitiseField, requireField } from '../utils/sanitise';
@@ -136,6 +136,17 @@ export default function Admin() {
       loadReported();
     } catch {
       toast.error('Failed to dismiss');
+    }
+  };
+
+  const handleDeleteReview = async (reviewId, title) => {
+    if (!window.confirm(`Delete review "${title}"? This cannot be undone.`)) return;
+    try {
+      await adminDeleteReview(reviewId);
+      toast.success('Review deleted');
+      loadReported();
+    } catch (e) {
+      toast.error(e.response?.data?.message || 'Failed to delete');
     }
   };
 
@@ -285,8 +296,9 @@ export default function Admin() {
                   <td style={{ fontFamily: 'var(--mono)', fontSize: '0.8rem' }}>{r.module_code}</td>
                   <td>{r.title}</td>
                   <td><span className="report-badge"> {r.report_count}</span></td>
-                  <td>
+                  <td style={{ display: 'flex', gap: 6 }}>
                     <button className="btn btn-secondary btn-sm" onClick={() => handleDismissReports(r.id, r.users || [])}>Dismiss</button>
+                    <button className="btn btn-danger btn-sm" onClick={() => handleDeleteReview(r.id, r.title)}>Delete</button>
                   </td>
                 </tr>
               ))}

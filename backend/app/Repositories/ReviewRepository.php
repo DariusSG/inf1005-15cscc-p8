@@ -167,6 +167,15 @@ class ReviewRepository extends BaseRepository
         return $review->fresh();
     }
 
+    public static function delete(int $id): bool
+    {
+        $review = Review::find($id);
+        if (!$review) {
+            return false;
+        }
+        return (bool) $review->delete();
+    }
+
     public static function userVote(int $reviewId, int $userId): ?ReviewVote
     {
         return ReviewVote::where('review_id', $reviewId)->where('user_id', $userId)->first();

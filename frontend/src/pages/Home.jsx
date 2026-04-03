@@ -37,7 +37,7 @@ export default function Home() {
               <br />
             </p>
             <p className="tagline-mobile">
-              With sitizens, you can read honest reviews from students who've taken the modules, find peer tutors, get help when you're stuck, and connect with study groups as well. Be a 
+              With sitizens, you can read honest reviews from students who've taken the modules, find peer tutors, get help when you're stuck, and connect with study groups as well. Be a better SITizen today!yes
             </p>
             <p className="subtitle-mobile">
               Facing issues navigating the site? Email cscc@dariussg.dev for any queries.
