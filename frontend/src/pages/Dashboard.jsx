@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
-import { getReviews, getTutors, getHelpRequests, postHelpSolve } from '../api/index';
+import { getReviews, getTutors, getHelpRequests, postHelpSolve, deleteTutor } from '../api/index';
 import { postChangePassword } from '../api/auth';
 import { useAuth } from '../context/AuthContext';
 import { validatePassword } from '../utils/sanitise';
@@ -117,6 +117,17 @@ export default function Dashboard() {
         catch { toast.error('Failed'); }
     };
 
+    const handleDeleteTutor = async (tutorId, tutorName) => {
+        if (!window.confirm(`Delete tutor listing for "${tutorName}"? This cannot be undone.`)) return;
+        try {
+            await deleteTutor(tutorId);
+            toast.success('Tutor listing deleted');
+            load();
+        } catch (e) {
+            toast.error(e.response?.data?.message || 'Failed to delete');
+        }
+    };
+
     if (!user) {
         return (
             <div className="page-section">
@@ -168,6 +179,7 @@ export default function Dashboard() {
                         </div>
                         <div className="di-actions">
                             <button className="btn btn-secondary btn-sm" onClick={() => navigate('/tutors')}>View</button>
+                            <button className="btn btn-danger btn-sm" onClick={() => handleDeleteTutor(t.id, t.name || t.user?.name)}>Delete</button>
                         </div>
                     </div>
                 ))}

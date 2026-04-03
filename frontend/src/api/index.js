@@ -43,6 +43,9 @@ export const postTutor = (data) =>
 export const putTutor = (id, data) =>
   client.put(`/tutors/${id}`, data).then((r) => r.data);
 
+export const deleteTutor = (id) =>
+  client.delete(`/tutors/${id}`).then((r) => r.data);
+
 // ── Help Requests ─────────────────────────────────────────
 export const getHelpRequests = (params) =>
   client.get('/help-requests', { params }).then((r) => r.data);
@@ -80,7 +83,8 @@ export const postStudyGroupJoin = (id) =>
 
 export const postStudyGroupLeave = (id) =>
   client.post(`/study-groups/${id}/leave`).then((r) => r.data);
-
+export const deleteStudyGroup = (id) =>
+  client.delete(`/study-groups/${id}`).then((r) => r.data);
 // ── Admin ─────────────────────────────────────────────────
 export const getReportedReviews = (params) =>
   client.get('/admin/reviews/report', { params }).then((r) => r.data);

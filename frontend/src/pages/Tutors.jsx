@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getTutors, postTutor, putTutor, getModules } from '../api/index';
+import { getTutors, postTutor, putTutor, deleteTutor, getModules } from '../api/index';
 import { useAuth } from '../context/AuthContext';
 import { sanitiseField, sanitiseEmail, sanitiseModuleCodes, requireField } from '../utils/sanitise';
 import { Loading, Empty, Avatar } from '../components/Shared';
@@ -255,6 +255,17 @@ export default function Tutors() {
 
   useEffect(() => { load(); }, []);
 
+  const handleDeleteTutor = async (tutorId, tutorName) => {
+    if (!window.confirm(`Delete tutor listing for "${tutorName}"? This cannot be undone.`)) return;
+    try {
+      await deleteTutor(tutorId);
+      toast.success('Tutor listing deleted');
+      load();
+    } catch (e) {
+      toast.error(e.response?.data?.message || 'Failed to delete');
+    }
+  };
+
   const filtered = tutors.filter((t) => {
     const q = search.toLowerCase();
     return !q || (t.name || t.user?.name || '').toLowerCase().includes(q) || (t.modules || []).some((m) => m.toLowerCase().includes(q));
@@ -294,7 +305,10 @@ export default function Tutors() {
             </div>
             <div style={{ alignSelf: 'center', display: 'flex', gap: 6 }}>
               {user && t.userEmail === user.email && (
-                <button className="btn btn-secondary btn-sm" onClick={() => setEditTutor(t)}>Edit</button>
+                <>
+                  <button className="btn btn-secondary btn-sm" onClick={() => setEditTutor(t)}>Edit</button>
+                  <button className="btn btn-danger btn-sm" onClick={() => handleDeleteTutor(t.id, t.name || t.user?.name)}>Delete</button>
+                </>
               )}
               <button className="btn btn-secondary btn-sm" onClick={() => setContactTutor(t)}>View Info</button>
             </div>

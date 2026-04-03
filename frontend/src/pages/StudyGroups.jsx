@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getStudyGroups, postStudyGroup, putStudyGroup, postStudyGroupJoin, postStudyGroupLeave, getModules } from '../api/index';
+import { getStudyGroups, postStudyGroup, putStudyGroup, postStudyGroupJoin, postStudyGroupLeave, deleteStudyGroup, getModules } from '../api/index';
 import { useAuth } from '../context/AuthContext';
 import { Loading, Empty } from '../components/Shared';
 import Modal from '../components/Modal';
@@ -168,6 +168,17 @@ export default function StudyGroups() {
     }
   };
 
+  const handleDeleteGroup = async (groupId, groupName) => {
+    if (!window.confirm(`Delete study group "${groupName}"? This cannot be undone.`)) return;
+    try {
+      await deleteStudyGroup(groupId);
+      toast.success('Study group deleted');
+      load();
+    } catch (e) {
+      toast.error(e.response?.data?.message || 'Failed to delete');
+    }
+  };
+
   useEffect(() => {
     if (!authLoading) {
       load();
@@ -229,7 +240,10 @@ export default function StudyGroups() {
               </span>
               <div className="help-actions">
                 {user && g.user_id === user.id && (
-                  <button className="btn btn-secondary btn-sm" onClick={() => setEditGroup(g)}>Edit</button>
+                  <>
+                    <button className="btn btn-secondary btn-sm" onClick={() => setEditGroup(g)}>Edit</button>
+                    <button className="btn btn-danger btn-sm" onClick={() => handleDeleteGroup(g.id, g.name)}>Delete</button>
+                  </>
                 )}
                 {user && g.user_id !== user.id && (
                   g.is_member ? (
