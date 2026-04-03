@@ -55,7 +55,6 @@ $router->prefix('/api/v1', function ($router) {
         $router->delete('/admin/users/{id}',     'AdminController@user_delete');
         $router->get('/admin/reviews/report',    'AdminController@reportedReviews_show');
         $router->delete('/admin/reviews/report', 'AdminController@reportedReviews_delete');
-        $router->delete('/admin/reviews/{id}',   'AdminController@review_delete');
         $router->post('/admin/modules',          'AdminController@module_store');
         $router->put('/admin/modules/{code}',    'AdminController@module_update');
         $router->delete('/admin/modules/{code}', 'AdminController@module_destroy');
@@ -72,6 +71,7 @@ $router->prefix('/api/v1', function ($router) {
         $router->get('/reviews',                'ReviewController@index');
         $router->post('/reviews',               'ReviewController@store');
         $router->put('/reviews/{id}',          'ReviewController@update');
+        $router->delete('/reviews/{id}',       'ReviewController@delete');
         $router->post('/reviews/{id}/vote',     'ReviewController@vote');
         $router->post('/reviews/{id}/report',   'ReviewController@report');
         $router->post('/reviews/{id}/comments', 'ReviewController@addComment');

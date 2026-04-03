@@ -235,6 +235,48 @@ class ReviewController
         Response::json(ReviewRepository::format($updated->load(['author', 'comments']), $userId));
     }
 
+    #[OA\Delete(
+        path: "/reviews/{id}",
+        summary: "Delete a review (author or admin only)",
+        tags: ["Reviews"],
+        security: [["bearerAuth" => []]],
+        parameters: [new OA\Parameter(name: "id", in: "path", required: true, schema: new OA\Schema(type: "integer"))],
+        responses: [
+            new OA\Response(response: 200, description: "Deleted"),
+            new OA\Response(response: 403, ref: "#/components/responses/Forbidden"),
+            new OA\Response(response: 404, ref: "#/components/responses/NotFound")
+        ]
+    )]
+    public function delete(int $id)
+    {
+        $userId = JwtMiddleware::userId();
+        $role   = JwtMiddleware::userRole();
+
+        try {
+            $id = Validators::positiveInt($id, 'id');
+        } catch (\InvalidArgumentException $e) {
+            Response::json(['message' => $e->getMessage(), 'code' => 'API_ERROR'], 400);
+        }
+
+        $review = ReviewRepository::find($id);
+        if (!$review) {
+            Response::json(['message' => 'Review not found', 'code' => 'API_ERROR'], 404);
+        }
+
+        // Only the author or an admin may delete
+        if ($review->user_id !== $userId && $role !== 'admin') {
+            Response::json(['message' => 'Forbidden', 'code' => 'API_ERROR'], 403);
+        }
+
+        try {
+            ReviewRepository::delete($id);
+            Response::json(['message' => 'Review deleted successfully']);
+        } catch (Exception $e) {
+            Logger::channel()->error('Error at ReviewController@delete', ['exception' => $e]);
+            Response::json(['message' => 'An unexpected error occurred', 'code' => 'API_ERROR'], 500);
+        }
+    }
+
     #[OA\Post(
         path: "/reviews/{id}/vote",
         summary: "Toggle upvote/downvote",

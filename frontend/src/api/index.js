@@ -30,6 +30,9 @@ export const postReviewReport = (id) =>
 export const postReviewComment = (id, content) =>
   client.post(`/reviews/${id}/comments`, { text: content }).then((r) => r.data);
 
+export const deleteReview = (id) =>
+  client.delete(`/reviews/${id}`).then((r) => r.data);
+
 // ── Tutors ────────────────────────────────────────────────
 export const getTutors = (params) =>
   client.get('/tutors', { params }).then((r) => r.data);
@@ -90,9 +93,6 @@ export const adminUpdateModule = (code, data) =>
 
 export const adminDeleteModule = (code) =>
   client.delete(`/admin/modules/${code}`).then((r) => r.data);
-
-export const adminDeleteReview = (id) =>
-  client.delete(`/admin/reviews/${id}`).then((r) => r.data);
 
 // ── Users ─────────────────────────────────────────────────
 export const getUsers = (params) =>

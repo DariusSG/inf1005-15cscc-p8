@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getReportedReviews, getModules, getModule, adminUpdateModule, adminDeleteModule, adminDeleteReview } from '../api/index';
+import { getReportedReviews, getModules, getModule, adminUpdateModule, adminDeleteModule, deleteReview } from '../api/index';
 import client from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import { sanitiseField, requireField } from '../utils/sanitise';
@@ -142,7 +142,7 @@ export default function Admin() {
   const handleDeleteReview = async (reviewId, title) => {
     if (!window.confirm(`Delete review "${title}"? This cannot be undone.`)) return;
     try {
-      await adminDeleteReview(reviewId);
+      await deleteReview(reviewId);
       toast.success('Review deleted');
       loadReported();
     } catch (e) {

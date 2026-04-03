@@ -134,48 +134,6 @@ readonly class AdminController
         }
     }
 
-    #[OA\Delete(
-        path: "/admin/reviews/{id}",
-        summary: "Delete a review",
-        tags: ["Admin"], security: [["bearerAuth" => []]], 
-        parameters: [
-            new OA\Parameter(
-                parameter: "ReviewId",
-                name: "id",
-                in: "path",
-                required: true,
-                schema: new OA\Schema(type: "integer", description: "Review ID")
-            )
-        ],
-        responses: [
-            new OA\Response(response: 200, description: "Success"),
-            new OA\Response(response: 404, description: "Review not found"),
-            new OA\Response(response: 500, description: "Internal Server Error"),
-            new OA\Response(response: 401, description: "Unauthorized")
-        ]
-    )]
-    public function review_delete(): void
-    {
-        $reviewId = Request::param('id');
-
-        if (!$reviewId) {
-            Response::json(['message' => 'id is required', 'code' => 'API_ERROR'], 400);
-            return;
-        }
-
-        try {
-            $deleted = ReviewRepository::delete((int)$reviewId);
-            if (!$deleted) {
-                Response::json(['message' => 'Review not found', 'code' => 'NOT_FOUND'], 404);
-                return;
-            }
-            Response::json(['message' => 'Review deleted successfully']);
-        } catch (Exception $e) {
-            Logger::channel()->error('Error at AdminController@review_delete', ['exception' => $e]);
-            Response::json(['message' => 'An unexpected error occurred', 'code' => 'API_ERROR'], 500);
-        }
-    }
-
 
     #[OA\Get(
         path: "/admin/users",

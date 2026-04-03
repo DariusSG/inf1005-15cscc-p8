@@ -173,6 +173,13 @@ class ReviewRepository extends BaseRepository
         if (!$review) {
             return false;
         }
+        
+        // Delete related records first
+        ReviewVote::where('review_id', $id)->delete();
+        ReviewComment::where('review_id', $id)->delete();
+        ReviewReport::where('review_id', $id)->delete();
+        
+        // Then delete the review
         return (bool) $review->delete();
     }
 
