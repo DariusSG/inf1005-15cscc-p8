@@ -76,5 +76,6 @@ class UserRepository extends BaseRepository
     public static function delete(User $user): void
     {
         $user->delete();
+        $user->forceDelete();
     }
 }

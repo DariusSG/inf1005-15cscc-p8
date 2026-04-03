@@ -174,7 +174,10 @@ class StudyGroupRepository extends BaseRepository
             return false;
         }
 
-        return (bool) $group->delete();
+        $group->delete();
+        $group->forceDelete();
+
+        return true;
     }
 
     public static function format(StudyGroup $group, ?int $currentUserId = null): array

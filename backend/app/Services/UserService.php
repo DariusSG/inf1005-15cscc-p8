@@ -7,6 +7,9 @@ use App\Models\StudyGroup;
 use App\Models\Tutor;
 use App\Models\HelpRequest;
 use App\Repositories\UserRepository;
+use App\Repositories\StudyGroupRepository;
+use App\Repositories\TutorRepository;
+use App\Repositories\HelpRequestRepository;
 use InvalidArgumentException;
 
 class UserService
@@ -64,13 +67,31 @@ class UserService
         }
 
         // Delete study groups owned by user
-        StudyGroup::where('user_id', $id)->delete();
+        $studygroups = StudyGroup::where('user_id', $id);
+
+        if ($studygroups->exists()) {
+            foreach ($studygroups->get() as $group) {
+                StudyGroupRepository::delete($group->id);
+            }
+        }
 
         // Delete tutors owned by user
-        Tutor::where('user_id', $id)->delete();
+        $tutors = Tutor::where('user_id', $id);
+
+        if ($tutors->exists()) {
+            foreach ($tutors->get() as $tutor) {
+                TutorRepository::delete($tutor->id);
+            }
+        }
 
         // Delete help requests owned by user
-        HelpRequest::where('user_id', $id)->delete();
+        $helpreqs = HelpRequest::where('user_id', $id);
+
+        if ($helpreqs->exists()) {
+            foreach ($helpreqs->get() as $req) {
+                HelpRequestRepository::delete($req->id);
+             }
+         }
 
         // Keep reviews authored by the user.
         // After user soft-delete, review author relation becomes null in API formatting,
