@@ -81,37 +81,6 @@ class StudyGroupController
         ]);
     }
 
-    #[OA\Post(
-        path: "/study-groups",
-        summary: "Create a new study group",
-        tags: ["Study Groups"],
-        security: [["bearerAuth" => []]],
-        requestBody: new OA\RequestBody(
-            required: true,
-            content: new OA\JsonContent(
-                required: ["name", "module_code"],
-                properties: [
-                    new OA\Property(property: "name", type: "string"),
-                    new OA\Property(property: "module_code", type: "string"),
-                    new OA\Property(property: "description", type: "string", nullable: true),
-                    new OA\Property(property: "meeting_time", type: "string", nullable: true),
-                    new OA\Property(property: "location", type: "string", nullable: true)
-                ]
-            )
-        ),
-        responses: [
-            new OA\Response(
-                response: 201, 
-                description: "Study group created", 
-                content: new OA\JsonContent(ref: "#/components/schemas/StudyGroup")
-            ),
-            new OA\Response(
-                response: 400, 
-                description: "Validation error", 
-                content: new OA\JsonContent(ref: "#/components/schemas/ErrorResponse")
-            )
-        ]
-    )]
     #[OA\Put(
         path: "/study-groups/{id}",
         summary: "Update a study group",
@@ -164,6 +133,37 @@ class StudyGroupController
         }
     }
 
+    #[OA\Post(
+        path: "/study-groups",
+        summary: "Create a new study group",
+        tags: ["Study Groups"],
+        security: [["bearerAuth" => []]],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                required: ["name", "module_code"],
+                properties: [
+                    new OA\Property(property: "name", type: "string"),
+                    new OA\Property(property: "module_code", type: "string"),
+                    new OA\Property(property: "description", type: "string"),
+                    new OA\Property(property: "meeting_time", type: "string"),
+                    new OA\Property(property: "location", type: "string")
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(
+                response: 201, 
+                description: "Study group created", 
+                content: new OA\JsonContent(ref: "#/components/schemas/StudyGroup")
+            ),
+            new OA\Response(
+                response: 400, 
+                description: "Validation error", 
+                content: new OA\JsonContent(ref: "#/components/schemas/ErrorResponse")
+            )
+        ]
+    )]
     public function store()
     {
         $userId = JwtMiddleware::userId();

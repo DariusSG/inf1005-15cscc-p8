@@ -13,11 +13,12 @@ use OpenApi\Attributes as OA;
         new OA\Property(property: "user_id", type: "integer"),
         new OA\Property(property: "name", type: "string"),
         new OA\Property(property: "module_code", type: "string"),
-        new OA\Property(property: "description", type: "string", nullable: true),
-        new OA\Property(property: "meeting_time", type: "string", nullable: true),
-        new OA\Property(property: "location", type: "string", nullable: true),
+        new OA\Property(property: "description", type: "string"),
+        new OA\Property(property: "meeting_time", type: "string"),
+        new OA\Property(property: "location", type: "string"),
         new OA\Property(property: "created_at", type: "string", format: "date-time"),
-        new OA\Property(property: "author", type: "string", nullable: true)
+        new OA\Property(property: "author", type: "string"),
+        new OA\Property(property: "member_count", type: "integer"),
     ]
 )]
 class StudyGroupRepository extends BaseRepository
@@ -175,9 +176,6 @@ class StudyGroupRepository extends BaseRepository
             'meeting_time' => $group->meeting_time,
             'location' => $group->location,
             'member_count' => (int) ($group->members_count ?? 0),
-            'memberCount' => (int) ($group->members_count ?? 0),
-            'maxSize' => (int) ($group->max_size ?? 0),
-            'max_size' => (int) ($group->max_size ?? 0),
             'is_member' => $currentUserId !== null && in_array($currentUserId, $memberIds, true),
             'created_at' => $group->created_at,
         ];
