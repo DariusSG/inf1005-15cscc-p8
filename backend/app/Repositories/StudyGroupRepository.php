@@ -3,6 +3,7 @@
 namespace App\Repositories;
 
 use App\Models\StudyGroup;
+use Illuminate\Database\Capsule\Manager as Capsule;
 use OpenApi\Attributes as OA;
 
 #[OA\Schema(
@@ -61,10 +62,12 @@ class StudyGroupRepository extends BaseRepository
         $currentUserId = isset($filters['current_user_id']) ? (int) $filters['current_user_id'] : null;
 
         if ($currentUserId !== null) {
-            $membershipByGroupId = StudyGroup::query()
-                ->whereIn('id', collect($paginator->items())->pluck('id')->all())
-                ->whereHas('members', fn($q) => $q->where('users.id', $currentUserId))
-                ->pluck('id')
+            $groupIds = collect($paginator->items())->pluck('id')->all();
+
+            $membershipByGroupId = Capsule::table('study_group_members')
+                ->where('user_id', $currentUserId)
+                ->whereIn('study_group_id', $groupIds)
+                ->pluck('study_group_id')
                 ->flip()
                 ->all();
 
