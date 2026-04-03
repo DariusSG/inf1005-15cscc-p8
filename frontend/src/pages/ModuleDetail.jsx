@@ -187,7 +187,7 @@ function ReviewCard({ review, moduleCode, onRefresh }) {
              {(review.comments || []).length}
           </button>
           {isOwn && <button className="btn-ghost btn-sm" onClick={() => setEditOpen(true)}>️ Edit</button>}
-          {!isOwn && user && <button className="btn-ghost btn-sm" onClick={handleReport}></button>}
+          {!isOwn && user && <button className="btn-ghost btn-sm" onClick={handleReport}>Report</button>}
         </div>
         {showComments && (
           <div className="comments-area">

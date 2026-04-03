@@ -61,6 +61,8 @@ function CreateGroupModal({ onClose, onSaved }) {
   const [name, setName] = useState('');
   const [moduleCode, setModuleCode] = useState('');
   const [desc, setDesc] = useState('');
+  const [meetingTime, setMeetingTime] = useState('');
+  const [location, setLocation] = useState('');
   const [maxSize, setMaxSize] = useState(5);
   const [loading, setLoading] = useState(false);
 
@@ -76,7 +78,7 @@ function CreateGroupModal({ onClose, onSaved }) {
     if (!name.trim()) { toast.error('Group name required'); return; }
     setLoading(true);
     try {
-      await postStudyGroup({ name, module_code: moduleCode, description: desc, maxSize });
+      await postStudyGroup({ name, module_code: moduleCode, description: desc, meeting_time: meetingTime, location, maxSize });
       toast.success('Study group created!');
       onSaved();
       onClose();
@@ -107,6 +109,14 @@ function CreateGroupModal({ onClose, onSaved }) {
         <div className="form-group">
           <label>Description</label>
           <textarea placeholder="What will you study, when do you meet..." value={desc} onChange={(e) => setDesc(e.target.value)} rows={2} />
+        </div>
+        <div className="form-group">
+          <label>Meeting Time</label>
+          <input type="text" placeholder="e.g. Wednesdays 6pm" value={meetingTime} onChange={(e) => setMeetingTime(e.target.value)} maxLength={100} />
+        </div>
+        <div className="form-group">
+          <label>Location</label>
+          <input type="text" placeholder="e.g. Library Level 3" value={location} onChange={(e) => setLocation(e.target.value)} maxLength={150} />
         </div>
         <div className="form-group">
           <label>Max Group Size</label>

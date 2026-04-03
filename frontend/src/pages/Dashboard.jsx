@@ -43,12 +43,12 @@ function ChangePasswordSection() {
     return (
         <div className="dash-section">
             <h2
-                style={{ cursor: 'pointer', userSelect: 'none' }}
+                style={{ cursor: 'pointer', userSelect: 'none', display: 'flex', alignItems: 'center' }}
                 onClick={() => { setOpen((o) => !o); reset(); }}
             >
                  Change Password
                 <span style={{ marginLeft: 'auto', fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 400 }}>
-          {open ? '▲ collapse' : '▼ expand'}
+          {open ? '▲' : '▼'}
         </span>
             </h2>
 
@@ -126,9 +126,9 @@ export default function Dashboard() {
         if (!user) return;
         setLoading(true);
         Promise.allSettled([
-            getReviews({ userId: user.id }),
-            getTutors({ userId: user.id }),
-            getHelpRequests({ userId: user.id }),
+            getReviews({ user_id: user.id }),
+            getTutors({ user_id: user.id }),
+            getHelpRequests({ user_id: user.id }),
         ]).then(([revRes, tutRes, helpRes]) => {
             setMyReviews(revRes.status === 'fulfilled' ? (revRes.value?.data || revRes.value || []) : []);
             setMyTutors(tutRes.status === 'fulfilled' ? (tutRes.value?.data || tutRes.value || []) : []);
