@@ -170,11 +170,18 @@ class StudyGroupController
         $data   = Request::body();
 
         try {
-            $name        = Validators::stringCheck($data['name'] ?? '', 'Title', 150);
-            $moduleCode  = Validators::moduleCode($data['module_code'] ?? null);
-            $description = isset($data['description'])  ? Validators::stringCheck($data['description'],'Content', 500) : null;
-            $location    = isset($data['location'])      ? Validators::stringCheck($data['location'], 'Content', 150)  : null;
-            $meetingTime = isset($data['meeting_time'])  ? Validators::stringCheck($data['meeting_time'], 'Content', 100)  : null;
+            $requiredFields = ['name', 'module_code', 'description', 'location', 'meeting_time'];
+            foreach ($requiredFields as $field) {
+                if (!array_key_exists($field, $data)) {
+                    Response::json(['message' => "{$field} is required", 'code' => 'API_ERROR'], 400);
+                }
+            }
+
+            $name        = Validators::stringCheck($data['name'], 'Title', 150);
+            $moduleCode  = Validators::moduleCode($data['module_code']);
+            $description = Validators::stringCheck($data['description'], 'Content', 500);
+            $location    = Validators::stringCheck($data['location'], 'Content', 150);
+            $meetingTime = Validators::stringCheck($data['meeting_time'], 'Content', 100);
 
             $group = StudyGroupRepository::create([
                 'user_id'      => $userId,

@@ -122,18 +122,26 @@ class ReviewController
         }
 
         try {
-            $moduleCode = Validators::moduleCode($data['module_code'] ?? '');
+            $requiredFields = ['module_code', 'rating', 'title', 'content', 'workload', 'difficulty', 'usefulness'];
+            foreach ($requiredFields as $field) {
+                if (!array_key_exists($field, $data)) {
+                    Response::json(['message' => "{$field} is required", 'code' => 'API_ERROR'], 400);
+                }
+            }
+
+            $moduleCode = Validators::moduleCode($data['module_code']);
+
             if (!ModuleRepository::findByCode($moduleCode)) {
                 Response::json(['message' => 'Module not found', 'code' => 'API_ERROR'], 404);
             }
 
-            $rating = Validators::rangeCheck($data['rating'] ?? 0, 1, 5, 'Rating');
-            $title = Validators::stringCheck($data['title'] ?? '', 'Title', 200);
-            $content = Validators::stringCheck($data['content'] ?? '', 'Content', 10000);
+            $rating = Validators::rangeCheck($data['rating'], 1, 5, 'Rating');
+            $title = Validators::stringCheck($data['title'], 'Title', 200);
+            $content = Validators::stringCheck($data['content'], 'Content', 10000);
 
-            $workload = isset($data['workload']) ? Validators::stringCheck($data['workload'], 'Content', 50) : null;
-            $difficulty = isset($data['difficulty']) ? Validators::stringCheck($data['difficulty'], 'Content', 50) : null;
-            $usefulness = isset($data['usefulness']) ? Validators::stringCheck($data['usefulness'], 'Content', 50) : null;
+            $workload = Validators::stringCheck($data['workload'], 'Content', 50);
+            $difficulty = Validators::stringCheck($data['difficulty'], 'Content', 50);
+            $usefulness = Validators::stringCheck($data['usefulness'], 'Content', 50);
 
             $review = ReviewRepository::create([
                 'module_code' => $moduleCode,

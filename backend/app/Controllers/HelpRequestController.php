@@ -212,16 +212,32 @@ class HelpRequestController
         $data   = Request::body();
 
         try {
-            $title        = Validators::stringCheck($data['title'] ?? '', 'Title', 200);
-            $moduleCode   = Validators::moduleCode($data['module_code'] ?? null);
-            $description  = Validators::stringCheck($data['description'] ?? '', 'Content', 5000);
-            $bountyAmount = Validators::rangeCheck($data['bounty_amount'] ?? null, 0, 10000, 'Bounty amount');
-            $urgency      = $data['urgency'] ?? 'low';
+            $requiredFields = ['title', 'module_code', 'description', 'contact_email', 'urgency', 'has_bounty'];
+            foreach ($requiredFields as $field) {
+                if (!array_key_exists($field, $data)) {
+                    Response::json(['message' => "{$field} is required", 'code' => 'API_ERROR'], 400);
+                }
+            }
+
+            $title        = Validators::stringCheck($data['title'], 'Title', 200);
+            $moduleCode   = Validators::moduleCode($data['module_code']);
+            $description  = Validators::stringCheck($data['description'], 'Content', 5000);
+
+            if ($data['has_bounty']) {
+                if (!array_key_exists('bounty_amount', $data)) {
+                    Response::json(['message' => "bounty_amount is required when has_bounty is true", 'code' => 'API_ERROR'], 400);
+                }
+                $bountyAmount = Validators::rangeCheck($data['bounty_amount'], 0, 10000, 'Bounty amount');
+            } else {
+                $bountyAmount = null;
+            }
+            
+            $urgency      = $data['urgency'];
             if (!in_array($urgency, ['low', 'medium', 'high'], true)) {
                 throw new InvalidArgumentException('urgency must be low, medium, or high');
             }
 
-            $contactEmail = Validators::email($data['contact_email'] ?? null);
+            $contactEmail = Validators::email($data['contact_email']);
 
             $req = HelpRequestRepository::create([
                 'user_id'       => $userId,

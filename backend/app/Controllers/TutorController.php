@@ -169,12 +169,19 @@ class TutorController
         $data   = Request::body();
 
         try {
-            $name         = Validators::stringCheck($data['name'] ?? '', 'Title', 100);
-            $contactEmail = Validators::email($data['contact_email'] ?? null);
-            $bio          = isset($data['bio']) ? Validators::stringCheck($data['bio'], 'Content', 1000) : null;
-            $rate         = Validators::rangeCheck($data['rate'] ?? null, 0, 1000, 'Rate');
+            $requiredFields = ['name', 'contact_email', 'bio', 'rate'];
+            foreach ($requiredFields as $field) {
+                if (!array_key_exists($field, $data)) {
+                    Response::json(['message' => "{$field} is required", 'code' => 'API_ERROR'], 400);
+                }
+            }
 
-            $rawModuleCodes = $data['module_codes'] ?? [];
+            $name         = Validators::stringCheck($data['name'], 'Title', 100);
+            $contactEmail = Validators::email($data['contact_email']);
+            $bio          = Validators::stringCheck($data['bio'], 'Content', 1000);
+            $rate         = Validators::rangeCheck($data['rate'], 0, 1000, 'Rate');
+
+            $rawModuleCodes = array_key_exists('module_codes', $data) ? $data['module_codes'] : [];
             if (!is_array($rawModuleCodes)) {
                 throw new \InvalidArgumentException('module_codes must be an array');
             }
