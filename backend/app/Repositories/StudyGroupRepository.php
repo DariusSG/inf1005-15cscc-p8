@@ -16,7 +16,8 @@ use OpenApi\Attributes as OA;
         new OA\Property(property: "description", type: "string", nullable: true),
         new OA\Property(property: "meeting_time", type: "string", nullable: true),
         new OA\Property(property: "location", type: "string", nullable: true),
-        new OA\Property(property: "created_at", type: "string", format: "date-time")
+        new OA\Property(property: "created_at", type: "string", format: "date-time"),
+        new OA\Property(property: "author", type: "string", nullable: true)
     ]
 )]
 class StudyGroupRepository extends BaseRepository
@@ -167,6 +168,7 @@ class StudyGroupRepository extends BaseRepository
             'id' => $group->id,
             'user_id' => $group->creator ? $group->user_id : -1,
             'name' => $group->name,
+            'author' => $group->creator?->name,
             'module_code' => $group->module_code,
             'module_name' => $group->module?->name,
             'description' => $group->description,
